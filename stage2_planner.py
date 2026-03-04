@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 
 from openai import AzureOpenAI
+
+import config
 from pydantic import BaseModel
 
 
@@ -34,11 +35,11 @@ SYSTEM_PROMPT = (Path(__file__).parent / "prompts" / "planner_system.txt").read_
 def plan_scenes(paper: dict) -> ScenePlan:
     """Call Azure OpenAI to produce a scene plan for the given paper content."""
     client = AzureOpenAI(
-        azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
-        api_key=os.environ["AZURE_OPENAI_API_KEY"],
+        azure_endpoint=config.get("azure_openai_endpoint"),
+        api_key=config.get("azure_openai_api_key"),
         api_version="2025-01-01-preview",
     )
-    deployment = os.environ["AZURE_OPENAI_PLANNER_DEPLOYMENT"]
+    deployment = config.get("azure_openai_planner_deployment")
 
     user_content = _build_user_prompt(paper)
 

@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import azure.cognitiveservices.speech as speechsdk
+
+import config
 
 
 def synthesize_scene(text: str, output_path: Path, voice: str = "en-US-AriaNeural") -> Path:
     """Generate an MP3 file from *text* using Azure TTS."""
     speech_config = speechsdk.SpeechConfig(
-        subscription=os.environ["AZURE_TTS_KEY"],
-        region=os.environ["AZURE_TTS_REGION"],
+        subscription=config.get("azure_tts_key"),
+        region=config.get("azure_tts_region"),
     )
     speech_config.set_speech_synthesis_output_format(
         speechsdk.SpeechSynthesisOutputFormat.Audio16Khz128KBitRateMonoMp3

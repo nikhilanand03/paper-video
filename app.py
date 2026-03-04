@@ -6,14 +6,11 @@ import shutil
 import threading
 from pathlib import Path
 
-from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from pipeline import create_job, get_job, run_pipeline, OUTPUT_ROOT
-
-load_dotenv()
 
 app = FastAPI(title="Paper-to-Video")
 

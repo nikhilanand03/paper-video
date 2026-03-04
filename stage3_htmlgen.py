@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 from openai import AzureOpenAI
 
+import config
 from stage2_planner import Scene
 
 SYSTEM_PROMPT = (Path(__file__).parent / "prompts" / "htmlgen_system.txt").read_text()
@@ -15,11 +15,11 @@ SYSTEM_PROMPT = (Path(__file__).parent / "prompts" / "htmlgen_system.txt").read_
 def generate_html(scene: Scene) -> str:
     """Return complete HTML string for a single scene."""
     client = AzureOpenAI(
-        azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
-        api_key=os.environ["AZURE_OPENAI_API_KEY"],
+        azure_endpoint=config.get("azure_openai_endpoint"),
+        api_key=config.get("azure_openai_api_key"),
         api_version="2025-01-01-preview",
     )
-    deployment = os.environ["AZURE_OPENAI_HTMLGEN_DEPLOYMENT"]
+    deployment = config.get("azure_openai_htmlgen_deployment")
 
     user_content = _build_prompt(scene)
 
