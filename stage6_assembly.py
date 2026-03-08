@@ -47,7 +47,6 @@ def _make_static_clip(
         "-c:a", "aac", "-b:a", "192k",
         "-pix_fmt", "yuv420p",
         "-t", str(duration),
-        "-shortest",
         str(out_path),
     ])
     return out_path
@@ -123,7 +122,6 @@ def _make_animated_clip(
         "-i", str(mp3_path),
         "-c:v", "copy",
         "-c:a", "aac", "-b:a", "192k",
-        "-shortest",
         str(out_path),
     ])
 

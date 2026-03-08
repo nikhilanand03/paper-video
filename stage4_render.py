@@ -35,8 +35,14 @@ class SceneRenderResult:
     hold_frame_path: Path | None = None
 
 
-async def _render_scenes(scenes: list, output_dir: Path) -> list[SceneRenderResult]:
-    """Render all scenes. `scenes` are stage2_planner.Scene objects."""
+async def _render_scenes(
+    scenes: list, output_dir: Path, preview_only: bool = False
+) -> list[SceneRenderResult]:
+    """Render all scenes. `scenes` are stage2_planner.Scene objects.
+
+    If preview_only=True, capture a single midpoint screenshot per scene
+    instead of full frame sequences.
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
     results: list[SceneRenderResult] = []
 
@@ -48,7 +54,10 @@ async def _render_scenes(scenes: list, output_dir: Path) -> list[SceneRenderResu
             tmpl = get_template(scene.template)
             html = prepare_scene_html(tmpl, scene.data)
 
-            if tmpl.animated and tmpl.animation_duration_ms > 0:
+            if preview_only:
+                mid_ms = tmpl.animation_duration_ms // 2 if tmpl.animated else 0
+                result = await _render_preview(page, html, i, mid_ms, output_dir)
+            elif tmpl.animated and tmpl.animation_duration_ms > 0:
                 result = await _render_animated(
                     page, html, i, tmpl.animation_duration_ms, output_dir
                 )
@@ -71,6 +80,42 @@ async def _render_static(
 
     await page.goto(tmp.as_uri(), wait_until="networkidle")
     await page.wait_for_timeout(2000)  # Wait for Chart.js / KaTeX
+
+    png_path = output_dir / f"scene_{index:03d}.png"
+    await page.screenshot(path=str(png_path), full_page=False)
+    tmp.unlink(missing_ok=True)
+
+    return SceneRenderResult(
+        scene_index=index,
+        mode="static",
+        static_path=png_path,
+        hold_frame_path=png_path,
+    )
+
+
+async def _render_preview(
+    page, html: str, index: int, seek_ms: int, output_dir: Path
+) -> SceneRenderResult:
+    """Single screenshot at a given animation time, for quick preview."""
+    tmp = output_dir / f"_tmp_scene_{index:03d}.html"
+    tmp.write_text(html, encoding="utf-8")
+
+    await page.goto(tmp.as_uri(), wait_until="networkidle")
+    await page.wait_for_timeout(500)
+
+    if seek_ms > 0:
+        await page.evaluate(f"""() => {{
+            const els = document.querySelectorAll('*');
+            for (const el of els) {{
+                const style = getComputedStyle(el);
+                if (style.animationName && style.animationName !== 'none') {{
+                    const origDelay = parseFloat(style.animationDelay) || 0;
+                    el.style.animationDelay = (origDelay - {seek_ms}) + 'ms';
+                    el.style.animationPlayState = 'paused';
+                }}
+            }}
+        }}""")
+        await page.wait_for_timeout(50)
 
     png_path = output_dir / f"scene_{index:03d}.png"
     await page.screenshot(path=str(png_path), full_page=False)
@@ -142,6 +187,8 @@ async def _render_animated(
     )
 
 
-def render_scenes(scenes: list, output_dir: Path) -> list[SceneRenderResult]:
+def render_scenes(
+    scenes: list, output_dir: Path, preview_only: bool = False
+) -> list[SceneRenderResult]:
     """Synchronous wrapper around async renderer."""
-    return asyncio.run(_render_scenes(scenes, output_dir))
+    return asyncio.run(_render_scenes(scenes, output_dir, preview_only=preview_only))

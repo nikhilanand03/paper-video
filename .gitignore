@@ -1,4 +1,6 @@
 output/
+uploaded-pdfs/
+sample-pdfs/
 __pycache__/
 *.pyc
 .env

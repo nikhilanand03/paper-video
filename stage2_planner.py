@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -48,7 +49,7 @@ def plan_scenes(paper: dict) -> ScenePlan:
     )
     deployment = config.get("azure_openai_planner_deployment")
 
-    user_content = _build_user_prompt(paper)
+    user_content, image_map = _build_user_prompt(paper)
 
     resp = client.chat.completions.create(
         model=deployment,
@@ -57,7 +58,7 @@ def plan_scenes(paper: dict) -> ScenePlan:
             {"role": "user", "content": user_content},
         ],
         temperature=0.7,
-        max_tokens=8192,
+        max_tokens=16384,
     )
 
     raw = resp.choices[0].message.content.strip()
@@ -69,23 +70,85 @@ def plan_scenes(paper: dict) -> ScenePlan:
     data = json.loads(raw)
     plan = ScenePlan.model_validate(data)
 
-    # Post-validation: ensure all templates exist
+    # Post-validation: ensure all templates exist, and resolve image keys
     for scene in plan.scenes:
         get_template(scene.template)
+        # Resolve image_path keys (e.g. "fig_0") back to absolute paths
+        if "image_path" in scene.data:
+            key = scene.data["image_path"]
+            if key in image_map:
+                scene.data["image_path"] = image_map[key]
 
     return plan
 
 
-def _build_user_prompt(paper: dict) -> str:
+def _build_user_prompt(paper: dict) -> tuple[str, dict[str, str]]:
+    """Build the user prompt and return (prompt_text, image_key_to_path_map).
+
+    Tables are passed as structured data (columns+rows) for the `data_table` template
+    and are NOT included in the image_map. Only figures map to image keys.
+    """
+    image_map: dict[str, str] = {}  # key -> absolute path
+
     parts = [f"# {paper['title']}"]
     if paper.get("authors"):
         parts.append(f"Authors: {', '.join(paper['authors'])}")
     if paper.get("abstract"):
         parts.append(f"\n## Abstract\n{paper['abstract']}")
-    for sec in paper.get("sections", []):
-        parts.append(f"\n## {sec['heading']}\n{sec['body'][:2000]}")
+
+    # Build a quick lookup for figure/table keys by their number in captions
+    fig_key_lookup: dict[int, str] = {}
+    if paper.get("figures"):
+        for i, fig in enumerate(paper["figures"]):
+            caption = fig.get("caption", "")
+            m = re.search(r"(?:Figure|Fig\.?)\s+(\d+)", caption, re.IGNORECASE)
+            if m:
+                fig_key_lookup[int(m.group(1))] = f"fig_{i}"
+
+    table_key_lookup: dict[int, int] = {}
     if paper.get("tables"):
-        parts.append("\n## Tables")
-        for t in paper["tables"][:5]:
-            parts.append(t[:500])
-    return "\n".join(parts)
+        for i, t in enumerate(paper["tables"]):
+            caption = t.get("caption", "")
+            m = re.search(r"Table\s+(\d+)", caption, re.IGNORECASE)
+            if m:
+                table_key_lookup[int(m.group(1))] = i
+
+    # Sections with inline cross-references
+    for sec in paper.get("sections", []):
+        refs = []
+        for fig_num in sec.get("fig_refs", []):
+            key = fig_key_lookup.get(fig_num, f"Figure {fig_num}")
+            refs.append(key if key.startswith("fig_") else f"Figure {fig_num}")
+        for tbl_num in sec.get("table_refs", []):
+            idx = table_key_lookup.get(tbl_num)
+            refs.append(f"table_{idx}" if idx is not None else f"Table {tbl_num}")
+
+        ref_line = f"  [References: {', '.join(refs)}]" if refs else ""
+        parts.append(f"\n## {sec['heading']}{ref_line}\n{sec['body'][:2000]}")
+
+    # Figures — each gets an image key
+    if paper.get("figures"):
+        parts.append("\n## Figures")
+        for i, fig in enumerate(paper["figures"]):
+            key = f"fig_{i}"
+            image_map[key] = fig["path"]
+            caption = fig.get("caption", "")
+            caption_str = f' — "{caption}"' if caption else ""
+            parts.append(f'- {key}: page {fig["page"]}{caption_str} (use image_path="{key}")')
+
+    # Tables — structured data for data_table template (NOT image keys)
+    if paper.get("tables"):
+        parts.append("\n## Tables (MUST each get a `data_table` scene)")
+        for i, t in enumerate(paper["tables"]):
+            cols = t.get("columns", [])
+            rows = t.get("rows", [])
+            caption = t.get("caption", "Untitled")
+            parts.append(f"### table_{i}: {caption}")
+            parts.append(f"  Columns: {json.dumps(cols)}")
+            # Show up to 10 rows to keep prompt size reasonable
+            for row in rows[:10]:
+                parts.append(f"  Row: {json.dumps(row)}")
+            if len(rows) > 10:
+                parts.append(f"  ... ({len(rows)} rows total)")
+
+    return "\n".join(parts), image_map

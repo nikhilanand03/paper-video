@@ -10,7 +10,7 @@ from fastapi import FastAPI, UploadFile, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from pipeline import create_job, get_job, run_pipeline, OUTPUT_ROOT
+from pipeline import create_job, get_job, run_pipeline, OUTPUT_ROOT, UPLOADED_PDFS_DIR
 from template_registry import REGISTRY, TemplateMeta
 from template_engine import prepare_scene_html_web, TEMPLATES_DIR
 
@@ -22,16 +22,15 @@ async def upload_pdf(file: UploadFile):
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(400, "Please upload a PDF file.")
 
-    # Save uploaded PDF
-    job_id = create_job(Path("pending"))  # placeholder, will overwrite path
-    job_dir = OUTPUT_ROOT / job_id
-    pdf_path = job_dir / file.filename
-    with open(pdf_path, "wb") as f:
+    # Save uploaded PDF to a temp location outside uploaded-pdfs,
+    # so create_job will run _store_pdf to deduplicate it properly.
+    tmp_path = OUTPUT_ROOT / f"_tmp_{file.filename}"
+    OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
+    with open(tmp_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    # Update job with real path
-    job = get_job(job_id)
-    job["pdf_path"] = str(pdf_path)
+    job_id = create_job(tmp_path)
+    tmp_path.unlink(missing_ok=True)
 
     # Run pipeline in background thread
     t = threading.Thread(target=run_pipeline, args=(job_id,), daemon=True)
@@ -63,7 +62,9 @@ async def download_video(job_id: str):
     final = Path(job["final_path"])
     if not final.exists():
         raise HTTPException(500, "Output file missing.")
-    return FileResponse(final, media_type="video/mp4", filename="paper_video.mp4")
+    # Use the job directory name (contains date + title) for the download filename
+    dir_name = Path(job["job_dir"]).name
+    return FileResponse(final, media_type="video/mp4", filename=f"{dir_name}.mp4")
 
 
 # ── Playground API ────────────────────────────────────────────────────────────
