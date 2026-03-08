@@ -11,6 +11,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
+import os
+
 from stage1_extract import extract_pdf
 from stage2_planner import plan_scenes
 from stage4_render import render_scenes
@@ -157,9 +159,11 @@ def run_pipeline(
         _notify(Status.EXTRACTING)
         paper = extract_pdf(job["pdf_path"], output_dir=job_dir)
 
+        # Always persist extraction data for the frontend
+        (job_dir / "extraction.json").write_text(json.dumps(paper, indent=2, default=str))
+        job["paper"] = paper
+
         if till_stage == "extract":
-            # Save extraction result as JSON for inspection
-            (job_dir / "extraction.json").write_text(json.dumps(paper, indent=2, default=str))
             _notify(Status.DONE)
             return
 
@@ -168,8 +172,12 @@ def run_pipeline(
         plan = plan_scenes(paper, output_dir=job_dir)
         job["scenes_total"] = len(plan.scenes)
 
+        # Always persist plan data for the frontend
+        plan_dict = plan.model_dump()
+        (job_dir / "plan.json").write_text(json.dumps(plan_dict, indent=2, default=str))
+        job["plan"] = plan_dict
+
         if till_stage == "plan":
-            (job_dir / "plan.json").write_text(json.dumps(plan.model_dump(), indent=2, default=str))
             _notify(Status.DONE)
             return
 
@@ -200,6 +208,25 @@ def run_pipeline(
         _notify(Status.ASSEMBLING)
         final = assemble(render_results, mp3_paths, job_dir)
         job["final_path"] = str(final)
+
+        # Upload to Azure Blob Storage if configured
+        conn_str = os.environ.get("AZURE_STORAGE_CONNECTION_STRING", "")
+        container = os.environ.get("AZURE_STORAGE_CONTAINER", "videos")
+        if conn_str:
+            try:
+                from azure.storage.blob import BlobServiceClient
+                blob_service = BlobServiceClient.from_connection_string(conn_str)
+                blob_name = f"{job_id}/{final.name}"
+                blob_client = blob_service.get_blob_client(container=container, blob=blob_name)
+                with open(final, "rb") as f:
+                    blob_client.upload_blob(f, overwrite=True, content_settings={
+                        "content_type": "video/mp4"
+                    })
+                job["blob_url"] = blob_client.url
+            except Exception as upload_err:
+                # Non-fatal — video is still available locally
+                job["blob_upload_error"] = str(upload_err)
+
         _notify(Status.DONE)
 
     except Exception as exc:

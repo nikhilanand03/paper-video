@@ -10,3 +10,6 @@ venv/
 dist/
 build/
 keys.json
+.vercel
+node_modules/
+.DS_Store

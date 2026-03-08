@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import json
+import os
 import shutil
 import threading
 from pathlib import Path
 
 from fastapi import FastAPI, UploadFile, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -15,6 +18,21 @@ from template_registry import REGISTRY, TemplateMeta
 from template_engine import prepare_scene_html_web, TEMPLATES_DIR
 
 app = FastAPI(title="Paper-to-Video")
+
+_default_origins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "https://banim.vercel.app",
+]
+_cors_origins = os.environ.get("CORS_ORIGINS", "").split(",") if os.environ.get("CORS_ORIGINS") else _default_origins
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.post("/upload")
@@ -42,8 +60,25 @@ async def upload_pdf(file: UploadFile):
 @app.get("/status/{job_id}")
 async def job_status(job_id: str):
     job = get_job(job_id)
+
+    # If not in memory, try to reconstruct from disk (server may have restarted)
     if not job:
+        job_dir = OUTPUT_ROOT / job_id
+        if job_dir.is_dir():
+            final = job_dir / "final.mp4"
+            plan_file = job_dir / "planned_outputs" / "full_plan.json"
+            scenes_total = 0
+            if plan_file.exists():
+                plan_data = json.loads(plan_file.read_text())
+                scenes_total = len(plan_data.get("scenes", []))
+            return {
+                "status": "done" if final.exists() else "failed",
+                "error": None,
+                "scenes_total": scenes_total,
+                "scenes_done": scenes_total if final.exists() else 0,
+            }
         raise HTTPException(404, "Job not found.")
+
     return {
         "status": job["status"],
         "error": job["error"],
@@ -52,19 +87,74 @@ async def job_status(job_id: str):
     }
 
 
+@app.get("/job/{job_id}/data")
+async def job_data(job_id: str):
+    """Return extraction + plan data for the frontend viewer."""
+    job = get_job(job_id)
+    job_dir = OUTPUT_ROOT / job_id
+    if not job and not job_dir.is_dir():
+        raise HTTPException(404, "Job not found.")
+    if job:
+        job_dir = Path(job["job_dir"])
+    result: dict = {}
+
+    # ── Paper metadata ──
+    # Try in-memory first, then extraction.json, then text.json (legacy)
+    paper = job.get("paper") if job else None
+    if not paper:
+        ext_path = job_dir / "extraction.json"
+        if ext_path.exists():
+            paper = json.loads(ext_path.read_text())
+    if not paper:
+        text_path = job_dir / "text.json"
+        if text_path.exists():
+            paper = json.loads(text_path.read_text())
+    if paper:
+        result["paper"] = paper
+
+    # ── Scene plan ──
+    # Try in-memory first, then plan.json, then planned_outputs/full_plan.json (legacy)
+    plan = job.get("plan") if job else None
+    if not plan:
+        plan_path = job_dir / "plan.json"
+        if plan_path.exists():
+            plan = json.loads(plan_path.read_text())
+    if not plan:
+        full_plan_path = job_dir / "planned_outputs" / "full_plan.json"
+        if full_plan_path.exists():
+            plan = json.loads(full_plan_path.read_text())
+    if plan:
+        result["plan"] = plan
+
+    return result
+
+
+def _find_video(job_id: str) -> Path:
+    """Find the final video file for a job (in-memory or on disk)."""
+    job = get_job(job_id)
+    if job and job.get("final_path"):
+        p = Path(job["final_path"])
+        if p.exists():
+            return p
+    # Fallback: look on disk
+    job_dir = OUTPUT_ROOT / job_id
+    final = job_dir / "final.mp4"
+    if final.exists():
+        return final
+    raise HTTPException(404, "Video not found.")
+
+
+@app.get("/stream/{job_id}")
+async def stream_video(job_id: str):
+    """Serve the video for in-browser playback."""
+    return FileResponse(_find_video(job_id), media_type="video/mp4")
+
+
 @app.get("/download/{job_id}")
 async def download_video(job_id: str):
-    job = get_job(job_id)
-    if not job:
-        raise HTTPException(404, "Job not found.")
-    if job["status"] != "done":
-        raise HTTPException(409, f"Job is not done yet (status: {job['status']}).")
-    final = Path(job["final_path"])
-    if not final.exists():
-        raise HTTPException(500, "Output file missing.")
-    # Use the job directory name (contains date + title) for the download filename
-    dir_name = Path(job["job_dir"]).name
-    return FileResponse(final, media_type="video/mp4", filename=f"{dir_name}.mp4")
+    """Serve the video as a download."""
+    final = _find_video(job_id)
+    return FileResponse(final, media_type="video/mp4", filename=f"{job_id}.mp4")
 
 
 # ── Playground API ────────────────────────────────────────────────────────────

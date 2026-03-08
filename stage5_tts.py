@@ -9,7 +9,7 @@ import azure.cognitiveservices.speech as speechsdk
 import config
 
 
-def synthesize_scene(text: str, output_path: Path, voice: str = "en-US-AriaNeural") -> Path:
+def synthesize_scene(text: str, output_path: Path, voice: str = "en-US-AndrewMultilingualNeural") -> Path:
     """Generate an MP3 file from *text* using Azure TTS."""
     speech_config = speechsdk.SpeechConfig(
         subscription=config.get("azure_tts_key"),
@@ -34,7 +34,7 @@ def synthesize_scene(text: str, output_path: Path, voice: str = "en-US-AriaNeura
 
 
 def synthesize_all(
-    narrations: list[str], output_dir: Path, voice: str = "en-US-AriaNeural"
+    narrations: list[str], output_dir: Path, voice: str = "en-US-AndrewMultilingualNeural"
 ) -> list[Path]:
     """Generate MP3 files for all narrations."""
     output_dir.mkdir(parents=True, exist_ok=True)

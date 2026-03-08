@@ -1,0 +1,14 @@
+platform/
+node_modules/
+.git/
+.env
+keys.json
+output/
+uploaded-pdfs/
+__pycache__/
+*.pyc
+.DS_Store
+brand-guidelines/
+HANDOVER.md
+scene_gallery.html
+.vercel/
