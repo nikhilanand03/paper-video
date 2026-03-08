@@ -21,55 +21,129 @@ Return ONLY valid JSON (no markdown fences):
 
 ### 1. title_card — Opening title slide
 ```json
-{ "title": "Paper Title", "authors": "Author A, Author B", "subtitle": "Optional subtitle or venue" }
+{ "title": "Paper Title", "authors": "Author A, Author B", "subtitle": "Optional subtitle", "venue": "NeurIPS 2024", "year": "2024", "meta_left": "RESEARCH PAPER", "meta_right": "2024" }
 ```
 `authors` can be a string or an array of `{ "name": "...", "affiliation": "..." }` objects.
+`venue` (optional) — displayed as a pill badge above the title.
+`meta_left`/`meta_right` (optional) — labels shown in the meta bar.
 
-### 2. section_header — Section divider
+### 2. flashcard_list — Numbered flashcard stack with active/dimmed states
 ```json
-{ "section_number": "01", "heading": "Section Title", "tagline": "Optional short description" }
+{ "title": "Key Contributions", "items": ["Point one", "Point two", "Point three"], "active_index": 2 }
 ```
+Up to 5 items. Each item gets a numbered badge. `active_index` (optional, 0-based) highlights one card while dimming others. Progress dots shown at bottom. Best for key findings, contributions, methodology steps.
 
-### 3. big_number — Highlight a single impressive metric
+### 3. data_table — Tabular data display
 ```json
-{ "label": "METRIC NAME", "value": "94.3%", "unit": "Accuracy", "description": "Compared to 87% baseline" }
+{ "title": "Results Table", "columns": ["Model", "Accuracy", "F1"], "rows": [["BERT", "94.3", "93.1"], ["GPT", "92.1", "91.5"]], "highlight_columns": [1], "best_row": 0, "caption": "Table 1: Model comparison" }
 ```
+`highlight_columns` — 0-indexed column indices to emphasize. Rows can be objects with `{ "cells": [...], "highlight": true }` to highlight a specific row. `best_row` (optional, 0-indexed) — styled in accent-secondary with a star marker. Up to ~8 rows, 6 columns.
 
-### 4. quote_highlight — Prominent quote with attribution
+### 4. big_number — Highlight a single impressive metric with decorative rings
 ```json
-{ "quote": "The quoted text here.", "attribution": "Source or context" }
+{ "label": "METRIC NAME", "value": "94.3", "unit": "%", "description": "Compared to 87% baseline" }
 ```
-`attribution` can be a string or `{ "name": "...", "role": "..." }`.
+Centered layout with large monospace value, decorative concentric circles behind. Best for "hero" stats.
 
-### 5. bullet_list — Key points or contributions
+### 5. comparison_split — Side-by-side comparison with VS badge
 ```json
-{ "title": "Key Contributions", "items": ["Point one", "Point two", "Point three"] }
+{ "heading": "Architecture Comparison", "left": { "label": "Method A", "tone": "negative", "points": ["Weakness one", "Weakness two"] }, "right": { "label": "Method B", "tone": "positive", "points": ["Strength one", "Strength two"] } }
 ```
-Up to 6 items. Best for key findings, contributions, methodology steps.
+`tone`: "neutral", "positive", or "negative". Affects border tint and icon style (checkmarks vs X marks). Up to 4 points per side.
 
-### 6. data_table — Tabular data display
+### 6. quote_highlight — Prominent quote with optional phrase highlight
 ```json
-{ "title": "Results Table", "columns": ["Model", "Accuracy", "F1"], "rows": [["BERT", "94.3", "93.1"], ["GPT", "92.1", "91.5"]], "highlight_columns": [1], "caption": "Table 1: Model comparison" }
+{ "quote": "The quoted text here.", "highlight_phrase": "key phrase to emphasize", "attribution": "— Abstract" }
 ```
-`highlight_columns` is a list of 0-indexed column indices to emphasize. Rows can also be objects with `{ "cells": [...], "highlight": true }` to highlight a specific row. Up to ~10 rows.
+`highlight_phrase` (optional) — substring of the quote rendered in accent color with tinted background. `attribution` can be a string or `{ "name": "...", "role": "..." }`.
 
-### 7. bar_chart — Vertical bar chart
+### 7. section_header — Section transition slide
 ```json
-{ "title": "Chart Title", "labels": ["A", "B", "C"], "values": [10, 20, 30], "dataset_label": "Score", "y_label": "Percentage", "highlight_index": 2, "caption": "Optional caption" }
+{ "section_number": "02", "heading": "Methodology", "tagline": "How the model works" }
 ```
-`highlight_index` (optional) highlights one bar in blue; others are gray.
+Decorative large faint number in corner, gradient accent bar on left, Instrument Serif title. Quick transition slide (3-5 seconds).
 
-### 8. line_chart — Line chart (trends over time)
+### 8. image_with_caption — Display an extracted figure from the paper
 ```json
-{ "title": "Chart Title", "labels": ["Epoch 1", "Epoch 2"], "datasets": [{ "label": "Train", "values": [0.8, 0.9] }, { "label": "Baseline", "values": [0.7, 0.75] }], "x_label": "Epoch", "y_label": "Accuracy", "caption": "Optional" }
+{ "title": "Figure Title", "image_path": "fig_0", "caption": "Figure 3: Architecture diagram", "callouts": [{ "label": "Attention Layer", "x": 30, "y": 20 }] }
 ```
+`image_path` MUST be one of the figure keys provided (e.g. "fig_0", "fig_1"). `callouts` (optional) — tooltip labels positioned at percentage coordinates on the image.
 
-### 9. donut_chart — Donut / pie chart with center label
+### 9. closing_card — Summary / takeaway slide
 ```json
-{ "title": "Chart Title", "labels": ["A", "B", "C"], "values": [40, 35, 25], "center_value": "100", "center_label": "Total", "caption": "Optional" }
+{ "title": "Key Takeaway", "summary": "One or two sentences summarizing the paper's main contribution.", "paper_url": "arxiv.org/abs/1234.5678" }
 ```
+Centered layout with icon, gradient accent lines at top and bottom edges. Always the last scene.
+
+### 10. bar_chart — Vertical bar chart
+```json
+{ "title": "Chart Title", "labels": ["A", "B", "C"], "values": [10, 20, 30], "dataset_label": "Score", "y_label": "Percentage", "highlight_index": 2, "begin_at_zero": true, "caption": "Source: Table 2" }
+```
+`highlight_index` (optional) highlights one bar in blue; others are gray. Best for comparing discrete categories.
+
+### 11. grouped_bar_chart — Multiple series grouped side by side
+```json
+{ "title": "Performance Across Datasets", "labels": ["Dataset A", "Dataset B"], "datasets": [{ "label": "Baseline", "values": [80, 75] }, { "label": "Ours", "values": [90, 88] }], "y_label": "Accuracy", "caption": "Optional" }
+```
+Up to 4 datasets, 8 groups. Each dataset gets a distinct color. Legend always shown.
+
+### 12. horizontal_bar_chart — Horizontal bars sorted by value
+```json
+{ "title": "Training Cost Comparison", "labels": ["Model A", "Model B", "Model C"], "values": [100, 75, 25], "highlight_label": "Model C", "unit_label": "FLOPs (×10^18)", "caption": "Optional" }
+```
+`highlight_label` (optional) — the bar matching this label is highlighted in green. Bars auto-sorted descending. Best for ranked comparisons.
+
+### 13. line_chart — Line chart for trends over time
+```json
+{ "title": "Training Loss", "labels": ["Epoch 1", "Epoch 2"], "datasets": [{ "label": "Train", "values": [0.8, 0.9] }, { "label": "Baseline", "values": [0.7, 0.75] }], "x_label": "Epoch", "y_label": "Loss", "caption": "Optional" }
+```
+Up to 5 line series. Smooth curves with data point dots. Legend if multiple datasets.
+
+### 14. scatter_plot — Scatter plot for correlation / trade-off visualization
+```json
+{ "title": "Accuracy vs Cost", "groups": [{ "label": "Previous Work", "points": [{ "x": 10, "y": 85 }, { "x": 15, "y": 88 }] }, { "label": "Ours", "points": [{ "x": 3, "y": 92, "label": "Base" }] }], "x_label": "Training Cost", "y_label": "BLEU Score", "caption": "Optional" }
+```
+Points can have optional `label` for annotation. Best for showing efficiency trade-offs.
+
+### 15. pie_donut_chart — Donut chart with center label and legend
+```json
+{ "title": "Data Distribution", "labels": ["Category A", "Category B"], "values": [60, 40], "center_value": "100K", "center_label": "Total", "caption": "Optional" }
+```
+Up to 5 segments. Center label for totals. Legend displayed to the right.
+
+### 16. heatmap — Matrix heatmap for attention weights or confusion matrices
+```json
+{ "title": "Attention Weights", "row_labels": ["The", "cat", "sat"], "col_labels": ["The", "cat", "sat"], "matrix": [[0.9, 0.1, 0.0], [0.2, 0.8, 0.0], [0.1, 0.1, 0.8]], "show_values": true, "caption": "Layer 5, Head 3" }
+```
+Values mapped to blue intensity. White text on dark cells, dark text on light cells. Max 10×10 matrix.
+
+### 17. multi_metric_cards — Row of metric summary cards with deltas
+```json
+{ "title": "Model Performance Summary", "metrics": [{ "value": "28.4", "unit": "BLEU", "label": "EN-DE Translation", "delta": "+3.2", "direction": "up" }, { "value": "41.0", "unit": "BLEU", "label": "EN-FR Translation", "delta": "+0.5", "direction": "up" }] }
+```
+3-4 cards. Each has a large monospace value, unit, label, and optional delta badge (green for "up", red for "down"). Best for performance summaries.
 
 ## Storytelling Guidelines
+
+### Figure Handling — CRITICAL
+When figures are provided (e.g. fig_0, fig_1), you MUST use the `image_with_caption` template to show them. Do NOT recreate figures as bar_chart, line_chart, or other chart templates. The extracted figure images are higher quality and more accurate than any chart you could reconstruct from the data. Always prefer `image_with_caption` over chart templates when a figure is available for the content being discussed.
+
+Only use chart templates (bar_chart, grouped_bar_chart, horizontal_bar_chart, line_chart, scatter_plot, pie_donut_chart, heatmap) when you want to visualize data from a TABLE that has no corresponding figure, or when creating a NEW visualization not present in the paper.
+
+### Template Selection Guide
+- **Opening**: Always start with `title_card`
+- **Transitions**: Use `section_header` to divide major sections (3-5 second holds)
+- **Key points**: Use `flashcard_list` for 3-5 sequential points or contributions
+- **Comparisons**: Use `comparison_split` for A vs B discussions (old vs new method, pros vs cons)
+- **Standout metrics**: Use `big_number` for a single impressive result that deserves emphasis
+- **Multiple metrics**: Use `multi_metric_cards` when showing 3-4 metrics side by side
+- **Quotes**: Use `quote_highlight` for important claims from the abstract or conclusion
+- **Tables**: Use `data_table` for structured results; use `best_row` to highlight the paper's method
+- **Figures**: Use `image_with_caption` for ALL extracted figures
+- **Charts**: Use chart templates only for data from tables without figures
+- **Heatmaps**: Use `heatmap` for attention weights, confusion matrices, or correlation tables
+- **Scatter plots**: Use `scatter_plot` for showing trade-offs (accuracy vs cost, quality vs speed)
+- **Ending**: Always end with `closing_card`
 
 ### Chronological Ordering
 Figures and tables MUST appear AFTER the narrative context that discusses them. Use the `[References: ...]` annotations in each section to know which visuals belong where. Place figure/table scenes immediately after the section that introduces them — never before.
@@ -81,12 +155,19 @@ Cover the ENTIRE document from introduction through conclusion. Do not skip sect
 Every table listed in the "Tables" section MUST get its own dedicated scene using the `data_table` template. Use the structured columns and rows data provided. The narrator should explain the key findings shown in each table.
 
 ### General Rules
-- Start with `title_card`
+- Start with `title_card`, end with `closing_card`
 - Use `section_header` to divide major sections
-- Use chart templates when quantitative results benefit from visualization
-- Use `bullet_list` for key points, contributions, or methodology steps
+- Use `image_with_caption` for ALL referenced figures — never recreate them as charts
+- Use chart templates ONLY for data that has no extracted figure
+- Use `flashcard_list` for key points, contributions, or methodology steps
 - Use `big_number` to highlight standout metrics
+- Use `comparison_split` for comparing approaches, methods, or results
+- Use `multi_metric_cards` for performance summaries with multiple metrics
+- Use `heatmap` for attention visualizations or matrices in the paper
+- Use `scatter_plot` for trade-off or correlation visualizations
 - Each narration should be 2-4 sentences, conversational but informative
 - Duration should match narration length (~150 words/min). Minimum 6 seconds, maximum 15 seconds.
 - Use the document's actual data and findings — don't invent content
 - Choose templates that best match the content (don't force data into wrong templates)
+- One concept per scene. Never combine a chart and a bullet list in the same frame.
+- Maximum 2 accent colors per scene in data visualizations

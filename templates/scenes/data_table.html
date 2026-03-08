@@ -5,42 +5,84 @@
 <meta name="viewport" content="width=1920, height=1080">
 <link rel="stylesheet" href="../theme.css">
 <title>Data Table</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-.table-slide {
+  :root {
+    --bg-primary: #FAFAF8;
+    --bg-surface: #FFFFFF;
+    --text-primary: #1A1A1A;
+    --text-secondary: #6B7280;
+    --text-dim: #9CA3AF;
+    --accent-primary: #2563EB;
+    --accent-secondary: #7C3AED;
+    --font-title: 'Instrument Serif', serif;
+    --font-heading: 'Inter', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+
+  *, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: var(--bg-primary);
+  }
+
+  .frame {
     width: 1920px;
     height: 1080px;
+    background: var(--bg-primary);
+    position: relative;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: flex-start;
     padding: 96px 128px;
-    position: relative;
-    overflow: hidden;
-}
-.table-slide h2 {
+  }
+
+  .heading {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding-bottom: 40px;
+    margin-bottom: 0;
+  }
+
+  .heading .accent-bar {
+    width: 48px;
+    height: 4px;
+    background: var(--accent-primary);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .heading h2 {
     font-family: var(--font-heading);
     font-size: 38px;
     font-weight: 600;
-    letter-spacing: -0.5px;
     color: var(--text-primary);
-    margin-bottom: 40px;
-    animation: fade-up 0.6s ease-out both;
-}
-.table-wrap {
+    letter-spacing: -0.5px;
+  }
+
+  .table-card {
     width: 100%;
     background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--card-radius);
-    box-shadow: var(--card-shadow);
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
     overflow: hidden;
-    animation: fade-up 0.7s ease-out 0.1s both;
-}
-.table-wrap table {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+  }
+
+  table {
     width: 100%;
     border-collapse: collapse;
     text-align: left;
-}
-.table-wrap th {
+  }
+
+  thead th {
     background: #F9FAFB;
     font-family: var(--font-body);
     font-size: 15px;
@@ -49,100 +91,179 @@
     text-transform: uppercase;
     letter-spacing: 1px;
     padding: 16px 24px;
-    border-bottom: none;
-}
-.table-wrap td {
+    border-bottom: 1px solid #E5E7EB;
+  }
+
+  tbody td {
     font-family: var(--font-body);
-    font-size: 24px;
+    font-size: 22px;
     padding: 16px 24px;
-    border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);
-}
-.table-wrap tr:last-child td {
+    border-bottom: 1px solid #F3F4F6;
+  }
+
+  tbody tr:last-child td {
     border-bottom: none;
-}
-.table-wrap tr.row-even {
+  }
+
+  tbody tr.row-even {
     background: #F9FAFB;
-}
-.table-wrap tr.row-odd {
+  }
+
+  tbody tr.row-odd {
     background: #FFFFFF;
-}
-.table-wrap tr.row-highlight {
+  }
+
+  tbody tr.row-highlight {
     background: rgba(37, 99, 235, 0.06);
     border-left: 3px solid var(--accent-primary);
-}
-.table-wrap tr.row-highlight td:first-child {
-    color: var(--accent-primary);
+  }
+
+  tbody tr.row-highlight td:first-child {
+    padding-left: 21px; /* 24px - 3px border */
+  }
+
+  tbody tr.row-best td {
+    color: var(--accent-secondary);
     font-weight: 600;
-}
-.table-wrap td.mono {
+  }
+
+  .cell-green {
+    color: #059669 !important;
+  }
+
+  td.numeric {
     font-family: var(--font-mono);
     font-weight: 500;
-}
-.table-slide .caption {
+    text-align: right;
+  }
+
+  th.numeric {
+    text-align: right;
+  }
+
+  .caption {
     font-family: var(--font-body);
     font-size: 16px;
-    color: var(--text-secondary);
-    margin-top: 24px;
-    animation: fade-up 0.7s ease-out 0.2s both;
-}
+    color: var(--text-dim);
+    align-self: flex-end;
+    padding-top: 20px;
+    margin-top: 0;
+  }
+  .heading .accent-bar { transform-origin: left; animation: grow-width 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both; }
+  .heading h2          { animation: slide-in-left 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both; }
+  .table-card          { animation: scale-up-subtle 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both; }
+  .caption             { animation: fade-in 0.4s ease 0.6s both; }
 </style>
 </head>
 <body>
-<div class="table-slide">
+<div class="frame" id="scene">
+  <div class="heading">
+    <div class="accent-bar"></div>
     <h2 id="title"></h2>
-    <div class="table-wrap">
-        <table id="table"></table>
-    </div>
-    <div class="caption" id="caption"></div>
+  </div>
+  <div class="table-card">
+    <table id="table"></table>
+  </div>
+  <div class="caption" id="caption"></div>
 </div>
+
 <script>
-const D = window.SCENE_DATA || {};
-document.getElementById('title').textContent = D.title || '';
-if (D.caption) {
-    document.getElementById('caption').textContent = D.caption;
-} else {
-    document.getElementById('caption').style.display = 'none';
-}
-const table = document.getElementById('table');
-const columns = D.columns || [];
-const rows = D.rows || [];
-const highlightCols = D.highlight_columns || [];
-// Header
-const thead = document.createElement('thead');
-const hrow = document.createElement('tr');
-columns.forEach((col, i) => {
-    const th = document.createElement('th');
+(function() {
+  var data = window.SCENE_DATA || {
+    title: 'Model Comparison',
+    columns: ['Model', 'BLEU', 'Params (M)', 'Training Cost'],
+    rows: [
+      ['Transformer (base)', '27.3', '65', '$12K'],
+      ['Transformer (big)', '28.4', '213', '$48K'],
+      ['LSTM Seq2Seq', '25.9', '380', '$96K'],
+      ['ConvS2S', '26.4', '216', '$52K']
+    ],
+    highlight_columns: [],
+    best_row: 1,
+    caption: 'Results on WMT 2014 English-to-German translation task'
+  };
+
+  document.getElementById('title').textContent = data.title || '';
+
+  // Caption
+  var captionEl = document.getElementById('caption');
+  if (data.caption) {
+    captionEl.textContent = data.caption;
+  } else {
+    captionEl.style.display = 'none';
+  }
+
+  var table = document.getElementById('table');
+  var columns = data.columns || [];
+  var rows = data.rows || [];
+  var highlightCols = data.highlight_columns || [];
+  var bestRow = data.best_row !== undefined ? data.best_row : -1;
+
+  // Detect which columns are numeric (index > 0 by default, or check content)
+  function isNumericCol(colIndex) {
+    if (colIndex === 0) return false;
+    return true;
+  }
+
+  // Header
+  var thead = document.createElement('thead');
+  var hrow = document.createElement('tr');
+  columns.forEach(function(col, i) {
+    var th = document.createElement('th');
     th.textContent = col;
-    if (i > 0) th.style.textAlign = 'right';
+    if (isNumericCol(i)) th.className = 'numeric';
     hrow.appendChild(th);
-});
-thead.appendChild(hrow);
-table.appendChild(thead);
-// Body
-const tbody = document.createElement('tbody');
-rows.forEach((row, ri) => {
-    const tr = document.createElement('tr');
-    const isHighlight = row.highlight || row.isOurs ||
-        (highlightCols.length > 0 && row[0] && highlightCols.includes(row[0]));
-    if (isHighlight) {
-        tr.className = 'row-highlight';
-    } else {
-        tr.className = ri % 2 !== 0 ? 'row-even' : 'row-odd';
+  });
+  thead.appendChild(hrow);
+  table.appendChild(thead);
+
+  // Body
+  var tbody = document.createElement('tbody');
+  rows.forEach(function(row, ri) {
+    var tr = document.createElement('tr');
+    var cells = Array.isArray(row) ? row : (row.cells || []);
+    var isHighlight = false;
+
+    // Check highlight: by highlight_columns matching first cell, or row.highlight flag
+    if (!Array.isArray(row) && row.highlight) {
+      isHighlight = true;
+    } else if (highlightCols.length > 0 && cells[0] && highlightCols.indexOf(cells[0]) !== -1) {
+      isHighlight = true;
     }
-    const cells = Array.isArray(row) ? row : (row.cells || Object.values(row).filter(v => typeof v !== 'boolean'));
-    cells.forEach((cell, ci) => {
-        const td = document.createElement('td');
-        td.textContent = cell;
-        if (ci > 0) {
-            td.style.textAlign = 'right';
-            td.className = 'mono';
-        }
-        tr.appendChild(td);
+
+    var isBest = ri === bestRow;
+
+    if (isHighlight) {
+      tr.className = 'row-highlight';
+    } else {
+      tr.className = ri % 2 === 0 ? 'row-odd' : 'row-even';
+    }
+
+    if (isBest) {
+      tr.classList.add('row-best');
+    }
+
+    cells.forEach(function(cell, ci) {
+      var td = document.createElement('td');
+      var cellText = String(cell);
+      if (isBest && ci === 0) {
+        cellText += ' \u2605';
+      }
+      td.textContent = cellText;
+      if (isNumericCol(ci)) {
+        td.className = 'numeric';
+      }
+      if (isBest && ci === cells.length - 1) {
+        td.classList.add('cell-green');
+      }
+      tr.appendChild(td);
     });
+
     tbody.appendChild(tr);
-});
-table.appendChild(tbody);
+  });
+  table.appendChild(tbody);
+})();
 </script>
 </body>
 </html>

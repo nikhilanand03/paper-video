@@ -5,138 +5,187 @@
 <meta name="viewport" content="width=1920, height=1080">
 <link rel="stylesheet" href="../theme.css">
 <title>Title Card</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-.title-slide {
+  :root {
+    --bg-primary: #FAFAF8;
+    --bg-surface: #FFFFFF;
+    --text-primary: #1A1A1A;
+    --text-secondary: #6B7280;
+    --text-dim: #9CA3AF;
+    --accent-primary: #2563EB;
+    --accent-secondary: #7C3AED;
+    --font-title: 'Instrument Serif', serif;
+    --font-heading: 'Inter', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+
+  *, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: var(--bg-primary);
+  }
+
+  .frame {
     width: 1920px;
     height: 1080px;
+    background: var(--bg-primary);
+    position: relative;
+    overflow: hidden;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
     align-items: center;
+  }
+
+  .content {
     padding: 96px 128px;
-    position: relative;
-    overflow: hidden;
-}
-.title-card {
     width: 100%;
-    max-width: 1400px;
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--card-radius);
-    box-shadow: var(--card-shadow);
-    padding: 64px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    position: relative;
-    overflow: hidden;
-    animation: fade-up 0.8s ease-out both;
-}
-.title-card .meta-bar {
-    width: 100%;
+  }
+
+  .venue-badge {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 64px;
-    opacity: 0.8;
+    gap: 8px;
+    border: 1.5px solid var(--accent-primary);
+    border-radius: 999px;
+    padding: 6px 20px;
     font-family: var(--font-body);
-    font-size: 16px;
-    color: var(--text-secondary);
-}
-.title-card h1 {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent-primary);
+    background: rgba(37, 99, 235, 0.04);
+    width: fit-content;
+  }
+
+  .title {
     font-family: var(--font-title);
     font-size: 60px;
     font-weight: 400;
     letter-spacing: -1px;
-    line-height: 1.2;
-    margin-bottom: 40px;
+    line-height: 1.15;
     color: var(--text-primary);
-    text-align: center;
-    max-width: 1200px;
-}
-.title-card .authors {
-    display: flex;
-    gap: 64px;
-    align-items: center;
-    justify-content: center;
-    margin-top: 48px;
-}
-.title-card .author {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-}
-.title-card .author-name {
-    color: var(--text-primary);
-    font-size: 24px;
-    font-family: var(--font-heading);
-    font-weight: 500;
-}
-.title-card .author-affil {
-    color: var(--accent-primary);
-    font-size: 16px;
+    max-width: 1400px;
+    padding-top: 40px;
+    margin-bottom: 0;
+  }
+
+  .authors {
     font-family: var(--font-body);
-}
-.title-card .author-divider {
-    width: 1px;
-    height: 40px;
-    background: var(--border-color);
-}
-.title-card .subtitle-text {
     font-size: 24px;
+    font-weight: 400;
     color: var(--text-secondary);
-    margin-top: 24px;
+    padding-top: 36px;
+    margin-bottom: 0;
+    max-width: 1200px;
+    line-height: 1.5;
+  }
+
+  .authors .affiliation {
+    font-size: 16px;
+    color: var(--text-dim);
+    margin-left: 4px;
+  }
+
+  .subtitle {
     font-family: var(--font-body);
-}
+    font-size: 20px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    padding-top: 20px;
+    letter-spacing: 0.2px;
+    margin-bottom: 0;
+  }
+
+  .bottom-line {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #2563EB 0%, #7C3AED 50%, transparent 100%);
+    transform-origin: left;
+    animation: grow-width 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.6s both;
+  }
+  .venue-badge { animation: fade-down 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both; }
+  .title       { animation: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both; }
+  .authors     { animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both; }
+  .subtitle    { animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.45s both; }
 </style>
 </head>
 <body>
-<div class="title-slide">
-    <div class="title-card">
-        <div class="meta-bar">
-            <span id="meta-left">RESEARCH PAPER</span>
-            <span id="meta-right"></span>
-        </div>
-        <h1 id="title"></h1>
-        <div class="subtitle-text" id="subtitle"></div>
-        <div class="authors" id="authors"></div>
-    </div>
+<div class="frame" id="scene">
+  <div class="content">
+    <div class="venue-badge" id="venue-badge"></div>
+    <h1 class="title" id="title"></h1>
+    <div class="authors" id="authors"></div>
+    <div class="subtitle" id="subtitle"></div>
+  </div>
+  <div class="bottom-line"></div>
 </div>
+
 <script>
-const D = window.SCENE_DATA || {};
-document.getElementById('title').textContent = D.title || '';
-if (D.subtitle) {
-    document.getElementById('subtitle').textContent = D.subtitle;
-} else {
-    document.getElementById('subtitle').style.display = 'none';
-}
-if (D.meta_left) document.getElementById('meta-left').textContent = D.meta_left;
-if (D.meta_right) document.getElementById('meta-right').textContent = D.meta_right;
-const authorsEl = document.getElementById('authors');
-const authors = D.authors || '';
-if (typeof authors === 'string' && authors) {
-    // Simple string: just show it
-    const span = document.createElement('span');
-    span.className = 'author-name';
-    span.textContent = authors;
-    authorsEl.appendChild(span);
-} else if (Array.isArray(authors)) {
-    authors.forEach((a, i) => {
-        if (i > 0) {
-            const div = document.createElement('div');
-            div.className = 'author-divider';
-            authorsEl.appendChild(div);
+(function() {
+  var data = window.SCENE_DATA || {
+    title: 'Attention Is All You Need',
+    authors: [
+      { name: 'Ashish Vaswani', affiliation: 'Google Brain' },
+      { name: 'Noam Shazeer', affiliation: 'Google Brain' }
+    ],
+    subtitle: 'Neural Information Processing Systems',
+    venue: 'NeurIPS 2017',
+    year: '2017'
+  };
+
+  // Venue badge
+  var badgeEl = document.getElementById('venue-badge');
+  var venueText = [];
+  if (data.venue) venueText.push(data.venue);
+  if (data.year && (!data.venue || data.venue.indexOf(data.year) === -1)) venueText.push(data.year);
+  badgeEl.textContent = venueText.join(' ');
+  if (!venueText.length) badgeEl.style.display = 'none';
+
+  // Title
+  document.getElementById('title').textContent = data.title || '';
+
+  // Authors — support string or array of {name, affiliation}
+  var authorsEl = document.getElementById('authors');
+  if (typeof data.authors === 'string') {
+    authorsEl.textContent = data.authors;
+  } else if (Array.isArray(data.authors)) {
+    data.authors.forEach(function(author, i) {
+      if (i > 0) {
+        authorsEl.appendChild(document.createTextNode(', '));
+      }
+      if (typeof author === 'string') {
+        authorsEl.appendChild(document.createTextNode(author));
+      } else {
+        var nameSpan = document.createElement('span');
+        nameSpan.textContent = author.name;
+        authorsEl.appendChild(nameSpan);
+        if (author.affiliation) {
+          var affSpan = document.createElement('span');
+          affSpan.className = 'affiliation';
+          affSpan.textContent = ' (' + author.affiliation + ')';
+          authorsEl.appendChild(affSpan);
         }
-        const author = document.createElement('div');
-        author.className = 'author';
-        const name = typeof a === 'string' ? a : (a.name || '');
-        const affil = typeof a === 'object' ? (a.affiliation || '') : '';
-        author.innerHTML = `<span class="author-name">${name}</span>` +
-            (affil ? `<span class="author-affil">${affil}</span>` : '');
-        authorsEl.appendChild(author);
+      }
     });
-}
+  }
+
+  // Subtitle
+  var subtitleEl = document.getElementById('subtitle');
+  subtitleEl.textContent = data.subtitle || '';
+  if (!data.subtitle) subtitleEl.style.display = 'none';
+
+})();
 </script>
 </body>
 </html>

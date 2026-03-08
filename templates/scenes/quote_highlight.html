@@ -6,90 +6,113 @@
 <link rel="stylesheet" href="../theme.css">
 <title>Quote Highlight</title>
 <style>
-.quote-slide {
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+.frame {
     width: 1920px;
     height: 1080px;
+    background: var(--bg-primary, #FAFAF8);
     display: flex;
-    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    align-items: flex-start;
-    padding: 0 128px;
     position: relative;
     overflow: hidden;
 }
-.quote-card {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--card-radius);
-    box-shadow: var(--card-shadow);
-    padding: 80px;
-    max-width: 1200px;
+
+.quote-area {
     position: relative;
-    animation: fade-up 0.8s ease-out both;
+    max-width: 1100px;
+    text-align: center;
 }
-.quote-card .accent-bar {
+
+.decorative-mark {
     position: absolute;
-    left: 0;
-    top: 80px;
-    width: 4px;
-    height: 100px;
-    background: var(--accent-primary);
-    border-radius: 0 2px 2px 0;
+    left: 350px;
+    top: 200px;
+    font-family: var(--font-title, 'Instrument Serif'), serif;
+    font-size: 200px;
+    line-height: 1;
+    color: var(--text-primary, #1A1A1A);
+    opacity: 0.06;
+    user-select: none;
+    pointer-events: none;
 }
-.quote-card blockquote {
-    font-family: var(--font-heading);
-    font-size: 36px;
-    font-weight: 400;
-    font-style: italic;
-    letter-spacing: -0.5px;
-    line-height: 1.4;
-    color: var(--text-primary);
-    margin-bottom: 40px;
+
+.quote-text {
+    font-family: var(--font-body, 'Inter'), sans-serif;
+    font-size: 32px;
+    line-height: 1.65;
+    color: var(--text-primary, #1A1A1A);
+    max-width: 1000px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
 }
-.quote-card .attribution {
-    display: flex;
-    align-items: center;
-    gap: 24px;
+
+.quote-text .highlight {
+    color: #2563EB;
+    background: rgba(37, 99, 235, 0.08);
+    border-radius: 4px;
+    padding: 2px 6px;
 }
-.quote-card .attribution .divider {
-    width: 48px;
-    height: 1px;
-    background: var(--text-secondary);
+
+.attribution {
+    font-family: var(--font-body, 'Inter'), sans-serif;
+    font-size: 16px;
+    color: var(--text-secondary, #6B7280);
+    text-align: center;
+    margin-top: 32px;
+    position: relative;
+    z-index: 1;
 }
-.quote-card .attribution .name {
-    font-family: var(--font-heading);
-    font-size: 24px;
-    font-weight: 600;
-    color: var(--text-primary);
-}
-.quote-card .attribution .role {
-    font-family: var(--font-body);
-    font-size: 18px;
-    color: var(--text-secondary);
-    margin-top: 4px;
-}
+.decorative-mark { animation: scale-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both; }
+.quote-text      { animation: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both; }
+.quote-text .highlight { animation: pop-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.6s both; }
+.attribution     { animation: fade-in 0.5s ease 0.5s both; }
 </style>
 </head>
 <body>
-<div class="quote-slide">
-    <div class="quote-card">
-        <div class="accent-bar"></div>
-        <blockquote id="quote"></blockquote>
+<div class="frame">
+    <div class="decorative-mark">&ldquo;</div>
+    <div class="quote-area">
+        <div class="quote-text" id="quote-text"></div>
         <div class="attribution" id="attribution"></div>
     </div>
 </div>
+
 <script>
-const D = window.SCENE_DATA || {};
-document.getElementById('quote').textContent = D.quote || '';
+const data = window.SCENE_DATA || {
+    quote: "The best way to predict the future is to invent it.",
+    highlight_phrase: "predict the future",
+    attribution: "Alan Kay"
+};
+
+function escapeHTML(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+const quoteEl = document.getElementById('quote-text');
 const attrEl = document.getElementById('attribution');
-const attribution = D.attribution || '';
-if (typeof attribution === 'string' && attribution) {
-    attrEl.innerHTML = `<div class="divider"></div><div><div class="name">${attribution}</div></div>`;
-} else if (typeof attribution === 'object') {
-    attrEl.innerHTML = `<div class="divider"></div><div>
-        <div class="name">${attribution.name || ''}</div>
-        ${attribution.role ? `<div class="role">${attribution.role}</div>` : ''}
-    </div>`;
+
+let quoteHTML = escapeHTML(data.quote || '');
+
+if (data.highlight_phrase) {
+    const escaped = escapeHTML(data.highlight_phrase);
+    const idx = quoteHTML.indexOf(escaped);
+    if (idx !== -1) {
+        quoteHTML =
+            quoteHTML.slice(0, idx) +
+            '<span class="highlight">' + escaped + '</span>' +
+            quoteHTML.slice(idx + escaped.length);
+    }
+}
+
+quoteEl.innerHTML = quoteHTML;
+
+if (data.attribution) {
+    attrEl.textContent = '\u2014 ' + data.attribution;
 }
 </script>
 </body>

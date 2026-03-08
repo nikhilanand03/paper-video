@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=1920, height=1080">
 <link rel="stylesheet" href="../theme.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<title>Line Chart</title>
+<title>Grouped Bar Chart</title>
 <style>
 .chart-slide {
     width: 1920px;
@@ -84,24 +84,18 @@ const D = window.SCENE_DATA || {};
 document.getElementById('title').textContent = D.title || '';
 if (D.caption) document.getElementById('caption').textContent = D.caption;
 
-const lineColors = ['#2563EB', '#DC2626', '#059669', '#D97706', '#7C3AED'];
+const groupColors = ['#2563EB', '#7C3AED', '#059669', '#D97706'];
 const datasets = (D.datasets || []).map((ds, i) => ({
-    label: ds.label || `Series ${i + 1}`,
-    data: ds.data || ds.values || [],
-    borderColor: lineColors[i % lineColors.length],
-    backgroundColor: lineColors[i % lineColors.length],
-    borderWidth: 3,
-    pointRadius: 8,
-    pointBackgroundColor: '#FFFFFF',
-    pointBorderWidth: 2,
-    pointBorderColor: lineColors[i % lineColors.length],
-    tension: 0.3,
-    fill: false,
+    label: ds.label || `Group ${i + 1}`,
+    data: ds.values || [],
+    backgroundColor: groupColors[i % groupColors.length],
+    borderRadius: 8,
+    borderSkipped: false,
 }));
 
 const ctx = document.getElementById('chart').getContext('2d');
 new Chart(ctx, {
-    type: 'line',
+    type: 'bar',
     data: {
         labels: D.labels || [],
         datasets: datasets,
@@ -112,27 +106,29 @@ new Chart(ctx, {
         animation: false,
         plugins: {
             legend: {
-                display: datasets.length > 1,
+                display: true,
                 position: 'top',
                 labels: {
                     color: '#6B7280',
                     font: { family: 'Inter', size: 14 },
                     usePointStyle: true,
-                    pointStyle: 'circle',
+                    pointStyle: 'rectRounded',
+                    padding: 24,
                 }
             },
+            datalabels: false,
         },
         scales: {
             x: {
                 ticks: { color: '#6B7280', font: { family: 'Inter', size: 16 } },
                 grid: { display: false },
                 border: { color: '#D1D5DB' },
-                title: { display: !!D.x_label, text: D.x_label || '', color: '#6B7280', font: { family: 'Inter', size: 16 } },
             },
             y: {
                 ticks: { color: '#6B7280', font: { family: 'Inter', size: 16 } },
                 grid: { color: '#F3F4F6', lineWidth: 1 },
                 border: { color: '#D1D5DB' },
+                beginAtZero: true,
                 title: { display: !!D.y_label, text: D.y_label || '', color: '#6B7280', font: { family: 'Inter', size: 16 } },
             }
         }

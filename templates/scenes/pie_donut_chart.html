@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=1920, height=1080">
 <link rel="stylesheet" href="../theme.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<title>Donut Chart</title>
+<title>Pie / Donut Chart</title>
 <style>
 .chart-slide {
     width: 1920px;
@@ -21,8 +21,9 @@
 .heading {
     display: flex;
     align-items: center;
-    gap: 20px;
-    padding-bottom: 40px;
+    gap: 16px;
+    margin-bottom: 40px;
+    width: 100%;
 }
 .accent-bar {
     width: 48px;
@@ -31,25 +32,30 @@
     border-radius: 2px;
     flex-shrink: 0;
 }
-.chart-slide h2 {
-    font-family: var(--font-heading);
+.heading h2 {
+    font-family: var(--font-heading, 'Inter', sans-serif);
     font-size: 38px;
     font-weight: 600;
     letter-spacing: -0.5px;
-    color: var(--text-primary);
-    margin: 0;
+    color: var(--text-primary, #111827);
 }
-.chart-body {
+.chart-card {
     width: 100%;
+    background: var(--bg-surface, #FFFFFF);
+    border: 1px solid var(--border-color, #E5E7EB);
+    border-radius: var(--card-radius, 12px);
+    box-shadow: var(--card-shadow, 0 1px 3px rgba(0,0,0,0.1));
+    padding: var(--card-padding, 32px);
     display: flex;
-    flex: 1;
     align-items: center;
-    justify-content: center;
-    gap: 120px;
+    justify-content: flex-start;
+    gap: 64px;
+    flex: 1;
+    position: relative;
 }
 .chart-container {
-    width: 440px;
-    height: 440px;
+    width: 400px;
+    height: 400px;
     position: relative;
     flex-shrink: 0;
 }
@@ -68,22 +74,22 @@
     pointer-events: none;
 }
 .center-label .center-value {
-    font-family: var(--font-mono);
-    font-size: 36px;
-    font-weight: 500;
-    color: var(--text-primary);
+    font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+    font-size: 48px;
+    font-weight: 600;
+    color: var(--text-primary, #111827);
     line-height: 1;
 }
 .center-label .center-desc {
-    font-family: var(--font-body);
+    font-family: var(--font-body, 'Inter', sans-serif);
     font-size: 16px;
-    color: var(--text-secondary);
+    color: var(--text-secondary, #6B7280);
     margin-top: 8px;
 }
 .legend {
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    gap: 20px;
 }
 .legend-item {
     display: flex;
@@ -91,31 +97,35 @@
     gap: 16px;
 }
 .legend-swatch {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     border-radius: 4px;
     flex-shrink: 0;
 }
 .legend-name {
-    font-family: var(--font-body);
-    font-size: 24px;
-    font-weight: 500;
-    color: var(--text-secondary);
+    font-family: var(--font-body, 'Inter', sans-serif);
+    font-size: 18px;
+    color: var(--text-secondary, #6B7280);
 }
 .legend-value {
-    font-family: var(--font-mono);
-    font-size: 20px;
-    color: var(--text-secondary);
+    font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+    font-size: 18px;
+    color: var(--text-primary, #111827);
     margin-left: auto;
     padding-left: 32px;
 }
-.chart-slide .caption {
-    font-family: var(--font-body);
-    font-size: 16px;
-    color: var(--text-secondary);
-    margin-top: 24px;
-    display: none;
+.caption {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    font-family: var(--font-body, 'Inter', sans-serif);
+    font-size: 14px;
+    color: var(--text-secondary, #6B7280);
 }
+.heading .accent-bar  { transform-origin: left; animation: grow-width 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both; }
+.heading h2           { animation: slide-in-left 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both; }
+.chart-container      { animation: scale-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both; }
+.legend               { animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both; }
 </style>
 </head>
 <body>
@@ -124,7 +134,7 @@
         <div class="accent-bar"></div>
         <h2 id="title"></h2>
     </div>
-    <div class="chart-body">
+    <div class="chart-card">
         <div class="chart-container">
             <canvas id="chart"></canvas>
             <div class="center-label">
@@ -133,8 +143,8 @@
             </div>
         </div>
         <div class="legend" id="legend"></div>
+        <div class="caption" id="caption"></div>
     </div>
-    <div class="caption" id="caption"></div>
 </div>
 <script>
 const D = window.SCENE_DATA || {};
@@ -143,11 +153,11 @@ if (D.caption) document.getElementById('caption').textContent = D.caption;
 if (D.center_value) document.getElementById('center-value').textContent = D.center_value;
 if (D.center_label) document.getElementById('center-desc').textContent = D.center_label;
 
-const palette = ['#2563EB', '#7C3AED', '#059669', '#D1D5DB', '#D97706', '#DC2626'];
+const palette = ['#2563EB', '#7C3AED', '#059669', '#D97706', '#DC2626'];
 const labels = D.labels || [];
 const values = D.values || [];
 
-// Build legend
+// Build custom legend
 const legendEl = document.getElementById('legend');
 labels.forEach((label, i) => {
     const item = document.createElement('div');
@@ -155,7 +165,7 @@ labels.forEach((label, i) => {
     item.innerHTML = `
         <div class="legend-swatch" style="background:${palette[i % palette.length]}"></div>
         <span class="legend-name">${label}</span>
-        <span class="legend-value">${values[i] != null ? values[i] + '%' : ''}</span>`;
+        <span class="legend-value">${values[i] != null ? values[i] : ''}</span>`;
     legendEl.appendChild(item);
 });
 

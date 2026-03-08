@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920, height=1080">
+<link rel="stylesheet" href="../theme.css">
+<title>Closing Card</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+.frame {
+    width: 1920px;
+    height: 1080px;
+    background: var(--bg-primary, #FAFAF8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Top accent line */
+.accent-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent-primary, #2563EB), transparent);
+}
+
+/* Bottom accent line */
+.accent-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent-secondary, #7C3AED), transparent);
+}
+
+.icon-box {
+    width: 64px;
+    height: 64px;
+    background: #F9FAFB;
+    border: 1.5px solid rgba(37, 99, 235, 0.3);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0;
+}
+
+.icon-box svg {
+    width: 28px;
+    height: 28px;
+    fill: #2563EB;
+    stroke: #2563EB;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.card-title {
+    font-family: var(--font-heading, 'Inter'), sans-serif;
+    font-size: 44px;
+    font-weight: 600;
+    color: var(--text-primary, #1A1A1A);
+    text-align: center;
+    margin-bottom: 0;
+    padding-top: 28px;
+    letter-spacing: -0.5px;
+}
+
+.summary {
+    font-family: var(--font-body, 'Inter'), sans-serif;
+    font-size: 24px;
+    color: var(--text-secondary, #6B7280);
+    text-align: center;
+    max-width: 1000px;
+    line-height: 1.65;
+    margin-bottom: 0;
+    padding-top: 28px;
+    margin-top: 0;
+}
+
+.paper-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 999px;
+    padding: 12px 24px;
+    margin-top: 48px;
+    text-decoration: none;
+    transition: background 0.15s;
+}
+
+.paper-link:hover {
+    background: #F3F4F6;
+}
+
+.paper-link .arrow {
+    font-size: 18px;
+    color: var(--accent-primary, #2563EB);
+    font-weight: 500;
+}
+
+.paper-link .url {
+    font-family: var(--font-mono, 'IBM Plex Mono'), monospace;
+    font-size: 20px;
+    color: var(--text-secondary, #6B7280);
+}
+.accent-top    { transform-origin: left; animation: grow-width 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both; }
+.accent-bottom { transform-origin: left; animation: grow-width 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.6s both; }
+.icon-box      { animation: scale-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both; }
+.card-title    { animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both; }
+.summary       { animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both; }
+.paper-link    { animation: fade-in 0.5s ease 0.5s both; }
+</style>
+</head>
+<body>
+<div class="frame">
+    <div class="accent-top"></div>
+    <div class="accent-bottom"></div>
+
+    <div class="icon-box">
+        <svg viewBox="0 0 24 24">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" style="opacity: 0.2"/>
+        </svg>
+    </div>
+
+    <h1 class="card-title" id="card-title">Key Takeaway</h1>
+    <p class="summary" id="summary"></p>
+    <a class="paper-link" id="paper-link" style="display:none;" target="_blank" rel="noopener noreferrer">
+        <span class="arrow">&rarr;</span>
+        <span class="url" id="paper-url"></span>
+    </a>
+</div>
+
+<script>
+const data = window.SCENE_DATA || {
+    title: "Key Takeaway",
+    summary: "This research demonstrates a significant advance in the field, with practical implications for future work.",
+    paper_url: "https://arxiv.org/abs/2301.00000"
+};
+
+const titleEl = document.getElementById('card-title');
+titleEl.textContent = data.title || 'Key Takeaway';
+
+document.getElementById('summary').textContent = data.summary || '';
+
+if (data.paper_url) {
+    const linkEl = document.getElementById('paper-link');
+    linkEl.href = data.paper_url;
+    linkEl.style.display = 'inline-flex';
+    document.getElementById('paper-url').textContent = data.paper_url;
+}
+</script>
+</body>
+</html>

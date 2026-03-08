@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920, height=1080">
+<link rel="stylesheet" href="../theme.css">
+<title>Figure Display</title>
+<style>
+.figure-slide {
+    width: 1920px;
+    height: 1080px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 64px 128px;
+    position: relative;
+    overflow: hidden;
+}
+.figure-title {
+    font-family: var(--font-heading);
+    font-size: 36px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+    margin-bottom: 32px;
+    text-align: center;
+    max-width: 1400px;
+}
+.figure-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    max-width: 1400px;
+    max-height: 720px;
+    animation: fade-up 0.8s ease-out both;
+}
+.figure-container img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+}
+.figure-caption {
+    margin-top: 24px;
+    font-family: var(--font-body);
+    font-size: 22px;
+    color: var(--text-secondary);
+    text-align: center;
+    max-width: 1200px;
+    line-height: 1.5;
+}
+</style>
+</head>
+<body>
+<div class="figure-slide">
+    <div class="figure-title" id="title"></div>
+    <div class="figure-container">
+        <img id="figure-img" src="" alt="Figure">
+    </div>
+    <div class="figure-caption" id="caption"></div>
+</div>
+<script>
+const D = window.SCENE_DATA || {};
+document.getElementById('title').textContent = D.title || '';
+if (!D.title) document.getElementById('title').style.display = 'none';
+document.getElementById('figure-img').src = D.image_path || '';
+document.getElementById('figure-img').alt = D.title || 'Figure';
+if (D.caption) {
+    document.getElementById('caption').textContent = D.caption;
+} else {
+    document.getElementById('caption').style.display = 'none';
+}
+</script>
+</body>
+</html>

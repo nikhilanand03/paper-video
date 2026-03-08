@@ -135,13 +135,73 @@ tr:last-child td {
     border-bottom: none;
 }
 
-/* Animations */
+/* ── Animations ─────────────────────────────────────────────────────────── */
+
+/* Core entrance keyframes */
 @keyframes fade-up {
-    from { opacity: 0; transform: translateY(24px); }
+    from { opacity: 0; transform: translateY(32px); }
     to   { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes fade-in {
     from { opacity: 0; }
     to   { opacity: 1; }
 }
+@keyframes fade-down {
+    from { opacity: 0; transform: translateY(-24px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slide-in-left {
+    from { opacity: 0; transform: translateX(-48px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slide-in-right {
+    from { opacity: 0; transform: translateX(48px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes scale-in {
+    from { opacity: 0; transform: scale(0.85); }
+    to   { opacity: 1; transform: scale(1); }
+}
+@keyframes scale-up-subtle {
+    from { opacity: 0; transform: scale(0.95) translateY(12px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes grow-width {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+}
+@keyframes grow-height {
+    from { transform: scaleY(0); }
+    to   { transform: scaleY(1); }
+}
+@keyframes pop-in {
+    0%   { opacity: 0; transform: scale(0.6); }
+    70%  { opacity: 1; transform: scale(1.05); }
+    100% { opacity: 1; transform: scale(1); }
+}
+@keyframes reveal-up {
+    from { opacity: 0; transform: translateY(100%); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes draw-line {
+    from { stroke-dashoffset: 1000; }
+    to   { stroke-dashoffset: 0; }
+}
+@keyframes pulse-ring {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    50%  { opacity: 0.15; }
+    100% { opacity: 0.06; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Stagger delay utility classes — use on child elements */
+.anim-d0  { animation-delay: 0ms !important; }
+.anim-d1  { animation-delay: 80ms !important; }
+.anim-d2  { animation-delay: 160ms !important; }
+.anim-d3  { animation-delay: 240ms !important; }
+.anim-d4  { animation-delay: 320ms !important; }
+.anim-d5  { animation-delay: 400ms !important; }
+.anim-d6  { animation-delay: 480ms !important; }
+.anim-d7  { animation-delay: 560ms !important; }
+.anim-d8  { animation-delay: 640ms !important; }
+.anim-d9  { animation-delay: 720ms !important; }
+.anim-d10 { animation-delay: 800ms !important; }

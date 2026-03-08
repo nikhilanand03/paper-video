@@ -5,86 +5,171 @@
 <meta name="viewport" content="width=1920, height=1080">
 <link rel="stylesheet" href="../theme.css">
 <title>Big Number</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-.big-number-slide {
+  :root {
+    --bg-primary: #FAFAF8;
+    --bg-surface: #FFFFFF;
+    --text-primary: #1A1A1A;
+    --text-secondary: #6B7280;
+    --text-dim: #9CA3AF;
+    --accent-primary: #2563EB;
+    --accent-secondary: #7C3AED;
+    --font-title: 'Instrument Serif', serif;
+    --font-heading: 'Inter', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+
+  *, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: var(--bg-primary);
+  }
+
+  .frame {
     width: 1920px;
     height: 1080px;
+    background: var(--bg-primary);
+    position: relative;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 96px 128px;
+  }
+
+  .decorative-circles {
+    position: absolute;
+    pointer-events: none;
+  }
+
+  .circle-outer {
+    position: absolute;
+    left: 700px;
+    top: 280px;
+    width: 520px;
+    height: 520px;
+    border-radius: 50%;
+    border: 1px solid rgba(37, 99, 235, 0.15);
+  }
+
+  .circle-inner {
+    position: absolute;
+    left: 750px;
+    top: 330px;
+    width: 420px;
+    height: 420px;
+    border-radius: 50%;
+    border: 1px solid rgba(37, 99, 235, 0.12);
+  }
+
+  .content {
     position: relative;
-    overflow: hidden;
-}
-.big-number-card {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--card-radius);
-    box-shadow: var(--card-shadow);
-    padding: 80px 120px;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    animation: fade-up 0.8s ease-out both;
-}
-.big-number-card .value {
-    font-family: var(--font-mono);
-    font-size: 120px;
+  }
+
+  .label {
+    font-family: var(--font-body);
+    font-size: 16px;
     font-weight: 500;
-    color: var(--accent-primary);
-    line-height: 1;
-}
-.big-number-card .unit {
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+  }
+
+  .value-row {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    padding-top: 20px;
+  }
+
+  .value {
     font-family: var(--font-mono);
-    font-size: 48px;
-    font-weight: 400;
-    color: var(--accent-primary);
-    margin-left: 8px;
-}
-.big-number-card .label {
-    margin-top: 24px;
-    font-family: var(--font-heading);
-    font-size: 38px;
-    font-weight: 600;
-    color: var(--text-primary);
-    letter-spacing: -0.5px;
-}
-.big-number-card .description {
-    margin-top: 16px;
+    font-size: 144px;
+    font-weight: 500;
+    color: var(--accent-secondary);
+    letter-spacing: -2px;
+    line-height: 1;
+  }
+
+  .unit {
     font-family: var(--font-body);
     font-size: 24px;
+    font-weight: 400;
     color: var(--text-secondary);
-    max-width: 600px;
-    line-height: 1.6;
-}
+  }
+
+  .description {
+    font-family: var(--font-body);
+    font-size: 24px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    max-width: 800px;
+    line-height: 1.5;
+    text-align: center;
+    padding-top: 32px;
+    margin-bottom: 0;
+  }
+  .circle-outer { animation: pulse-ring 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both; }
+  .circle-inner { animation: pulse-ring 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both; }
+  .label        { animation: fade-down 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both; }
+  .value-row    { animation: scale-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both; }
+  .description  { animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.5s both; }
 </style>
 </head>
 <body>
-<div class="big-number-slide">
-    <div class="big-number-card">
-        <div>
-            <span class="value" id="value"></span><span class="unit" id="unit"></span>
-        </div>
-        <div class="label" id="label"></div>
-        <div class="description" id="description"></div>
+<div class="frame" id="scene">
+  <div class="decorative-circles">
+    <div class="circle-outer"></div>
+    <div class="circle-inner"></div>
+  </div>
+  <div class="content">
+    <div class="label" id="label"></div>
+    <div class="value-row">
+      <span class="value" id="value"></span>
+      <span class="unit" id="unit"></span>
     </div>
+    <div class="description" id="description"></div>
+  </div>
 </div>
+
 <script>
-const D = window.SCENE_DATA || {};
-document.getElementById('value').textContent = D.value || '';
-document.getElementById('label').textContent = D.label || '';
-if (D.unit) {
-    document.getElementById('unit').textContent = D.unit;
-} else {
-    document.getElementById('unit').style.display = 'none';
-}
-if (D.description) {
-    document.getElementById('description').textContent = D.description;
-} else {
-    document.getElementById('description').style.display = 'none';
-}
+(function() {
+  var data = window.SCENE_DATA || {
+    label: 'Training Efficiency',
+    value: '3.3',
+    unit: 'days',
+    description: 'Total training time on 8 NVIDIA P100 GPUs to reach state-of-the-art performance'
+  };
+
+  document.getElementById('label').textContent = data.label || '';
+  document.getElementById('value').textContent = data.value || '';
+
+  var unitEl = document.getElementById('unit');
+  if (data.unit) {
+    unitEl.textContent = data.unit;
+  } else {
+    unitEl.style.display = 'none';
+  }
+
+  var descEl = document.getElementById('description');
+  if (data.description) {
+    descEl.textContent = data.description;
+  } else {
+    descEl.style.display = 'none';
+  }
+})();
 </script>
 </body>
 </html>

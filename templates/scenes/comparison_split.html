@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920, height=1080">
+<link rel="stylesheet" href="../theme.css">
+<title>Comparison Split</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #FAFAF8;
+    --bg-surface: #FFFFFF;
+    --text-primary: #1A1A1A;
+    --text-secondary: #6B7280;
+    --text-dim: #9CA3AF;
+    --accent-primary: #2563EB;
+    --accent-secondary: #7C3AED;
+    --font-title: 'Instrument Serif', serif;
+    --font-heading: 'Inter', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+
+  *, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: var(--bg-primary);
+  }
+
+  .frame {
+    width: 1920px;
+    height: 1080px;
+    background: var(--bg-primary);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 96px 128px;
+  }
+
+  .heading {
+    font-family: var(--font-heading);
+    font-size: 38px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+    padding-bottom: 48px;
+    margin-bottom: 0;
+    text-align: center;
+  }
+
+  .panels-container {
+    display: flex;
+    gap: 32px;
+    width: 100%;
+    flex: 1;
+    position: relative;
+    align-items: stretch;
+  }
+
+  .panel {
+    flex: 1;
+    background: var(--bg-surface);
+    border-radius: 12px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+  }
+
+  .panel.tone-neutral {
+    border: 1px solid #D1D5DB;
+  }
+
+  .panel.tone-positive {
+    border: 1px solid rgba(5, 150, 105, 0.3);
+  }
+
+  .panel.tone-negative {
+    border: 1px solid rgba(220, 38, 38, 0.3);
+  }
+
+  .panel-label {
+    font-family: var(--font-heading);
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 0;
+  }
+
+  .panel-header {
+    border-bottom: 1px solid #E5E7EB;
+    padding: 24px 32px;
+  }
+
+  .panel-body {
+    padding: 32px;
+  }
+
+  .panel.tone-neutral .panel-label { color: #6B7280; }
+  .panel.tone-positive .panel-label { color: #059669; }
+  .panel.tone-negative .panel-label { color: #DC2626; }
+
+  .points-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .point-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .point-icon {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+  }
+
+  .point-icon.neutral {
+    background: #F3F4F6;
+    color: #6B7280;
+  }
+
+  .point-icon.positive {
+    background: rgba(5, 150, 105, 0.1);
+    color: #059669;
+  }
+
+  .point-icon.negative {
+    background: rgba(220, 38, 38, 0.1);
+    color: #DC2626;
+  }
+
+  .point-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .point-text {
+    font-family: var(--font-body);
+    font-size: 22px;
+    color: var(--text-primary);
+    line-height: 1.5;
+  }
+
+  .vs-badge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #F9FAFB;
+    border: 2px solid var(--accent-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-heading);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent-primary);
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .heading      { animation: fade-down 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both; }
+  #panel-left   { animation: slide-in-left 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both; }
+  #panel-right  { animation: slide-in-right 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both; }
+  .vs-badge     { animation: pop-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.45s both; }
+</style>
+</head>
+<body>
+<div class="frame" id="scene">
+  <h2 class="heading" id="heading"></h2>
+  <div class="panels-container" id="panels-container">
+    <div class="panel" id="panel-left">
+      <div class="panel-header">
+        <div class="panel-label" id="label-left"></div>
+      </div>
+      <div class="panel-body">
+        <ul class="points-list" id="points-left"></ul>
+      </div>
+    </div>
+    <div class="vs-badge">VS</div>
+    <div class="panel" id="panel-right">
+      <div class="panel-header">
+        <div class="panel-label" id="label-right"></div>
+      </div>
+      <div class="panel-body">
+        <ul class="points-list" id="points-right"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var data = window.SCENE_DATA || {
+    heading: 'Transformer vs. RNN Architecture',
+    left: {
+      label: 'Transformer',
+      tone: 'positive',
+      points: [
+        'Fully parallelizable training',
+        'Constant path length between positions',
+        'Scales efficiently with hardware',
+        'Learns long-range dependencies'
+      ]
+    },
+    right: {
+      label: 'Recurrent (LSTM/GRU)',
+      tone: 'negative',
+      points: [
+        'Sequential computation bottleneck',
+        'Path length grows with distance',
+        'Difficult to parallelize',
+        'Gradient vanishing over long sequences'
+      ]
+    }
+  };
+
+  document.getElementById('heading').textContent = data.heading || '';
+
+  function getIconSVG(tone) {
+    if (tone === 'positive') {
+      return '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2.5 7.5 5.5 10.5 11.5 4.5"></polyline></svg>';
+    } else if (tone === 'negative') {
+      return '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="3" x2="11" y2="11"></line><line x1="11" y1="3" x2="3" y2="11"></line></svg>';
+    } else {
+      return '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="7" x2="11" y2="7"></line></svg>';
+    }
+  }
+
+  function renderPanel(side, panelData) {
+    var panelEl = document.getElementById('panel-' + side);
+    var labelEl = document.getElementById('label-' + side);
+    var pointsEl = document.getElementById('points-' + side);
+    var tone = panelData.tone || 'neutral';
+
+    panelEl.classList.add('tone-' + tone);
+    labelEl.textContent = panelData.label || '';
+
+    var points = panelData.points || [];
+    points.forEach(function(point) {
+      var li = document.createElement('li');
+      li.className = 'point-item';
+
+      var icon = document.createElement('div');
+      icon.className = 'point-icon ' + tone;
+      icon.innerHTML = getIconSVG(tone);
+
+      var text = document.createElement('span');
+      text.className = 'point-text';
+      text.textContent = point;
+
+      li.appendChild(icon);
+      li.appendChild(text);
+      pointsEl.appendChild(li);
+    });
+  }
+
+  if (data.left) renderPanel('left', data.left);
+  if (data.right) renderPanel('right', data.right);
+})();
+</script>
+</body>
+</html>

@@ -18,45 +18,66 @@
     position: relative;
     overflow: hidden;
 }
-.chart-slide h2 {
-    font-family: var(--font-heading);
+.heading {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 40px;
+}
+.accent-bar {
+    width: 48px;
+    height: 4px;
+    background: var(--accent-primary, #2563EB);
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+.heading h2 {
+    font-family: var(--font-heading, 'Inter', sans-serif);
     font-size: 38px;
     font-weight: 600;
     letter-spacing: -0.5px;
-    color: var(--text-primary);
-    margin-bottom: 40px;
+    color: var(--text-primary, #111827);
 }
 .chart-card {
     width: 100%;
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--card-radius);
-    box-shadow: var(--card-shadow);
-    padding: var(--card-padding);
+    background: var(--bg-surface, #FFFFFF);
+    border: 1px solid var(--border-color, #E5E7EB);
+    border-radius: var(--card-radius, 12px);
+    box-shadow: var(--card-shadow, 0 1px 3px rgba(0,0,0,0.1));
+    padding: var(--card-padding, 32px);
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
 }
 .chart-card canvas {
     max-width: 100%;
     max-height: 100%;
 }
-.chart-slide .caption {
-    font-family: var(--font-body);
-    font-size: 16px;
-    color: var(--text-secondary);
-    margin-top: 24px;
+.caption {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    font-family: var(--font-body, 'Inter', sans-serif);
+    font-size: 14px;
+    color: var(--text-secondary, #6B7280);
 }
+.heading .accent-bar { transform-origin: left; animation: grow-width 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both; }
+.heading h2          { animation: slide-in-left 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both; }
+.chart-card          { animation: scale-up-subtle 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both; }
 </style>
 </head>
 <body>
 <div class="chart-slide">
-    <h2 id="title"></h2>
+    <div class="heading">
+        <div class="accent-bar"></div>
+        <h2 id="title"></h2>
+    </div>
     <div class="chart-card">
         <canvas id="chart"></canvas>
+        <div class="caption" id="caption"></div>
     </div>
-    <div class="caption" id="caption"></div>
 </div>
 <script>
 const D = window.SCENE_DATA || {};
@@ -64,7 +85,8 @@ document.getElementById('title').textContent = D.title || '';
 if (D.caption) document.getElementById('caption').textContent = D.caption;
 
 const values = D.values || [];
-const highlightIndex = D.highlight_index != null ? D.highlight_index : values.length - 1;
+const hasHighlight = D.highlight_index != null;
+const highlightIndex = hasHighlight ? D.highlight_index : -1;
 const bgColors = values.map((_, i) => i === highlightIndex ? '#2563EB' : '#D1D5DB');
 
 const ctx = document.getElementById('chart').getContext('2d');
@@ -86,7 +108,13 @@ new Chart(ctx, {
         maintainAspectRatio: false,
         animation: false,
         plugins: {
-            legend: { display: false },
+            legend: {
+                display: hasHighlight,
+                labels: {
+                    color: '#6B7280',
+                    font: { family: 'Inter', size: 14 },
+                }
+            },
             datalabels: false,
         },
         scales: {
