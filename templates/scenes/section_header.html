@@ -20,9 +20,11 @@
 }
 
 .content {
-    padding-left: 40px;
+    padding-left: 140px;
     position: relative;
     z-index: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Decorative section number - top right */
@@ -40,14 +42,13 @@
     pointer-events: none;
 }
 
-/* Left accent bar */
+/* Left accent bar — positioned via the content wrapper */
 .accent-bar {
     position: absolute;
     left: 96px;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 0;
+    bottom: 0;
     width: 6px;
-    height: 200px;
     border-radius: 3px;
     background: linear-gradient(
         180deg,
@@ -93,9 +94,9 @@
 </head>
 <body>
 <div class="frame">
-    <div class="accent-bar"></div>
     <div class="deco-number" id="deco-number"></div>
     <div class="content">
+        <div class="accent-bar"></div>
         <div class="section-label" id="section-label"></div>
         <h1 class="heading" id="heading"></h1>
         <p class="tagline" id="tagline"></p>

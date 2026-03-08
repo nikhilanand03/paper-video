@@ -105,14 +105,9 @@ async def _render_preview(
 
     if seek_ms > 0:
         await page.evaluate(f"""() => {{
-            const els = document.querySelectorAll('*');
-            for (const el of els) {{
-                const style = getComputedStyle(el);
-                if (style.animationName && style.animationName !== 'none') {{
-                    const origDelay = parseFloat(style.animationDelay) || 0;
-                    el.style.animationDelay = (origDelay - {seek_ms}) + 'ms';
-                    el.style.animationPlayState = 'paused';
-                }}
+            for (const anim of document.getAnimations()) {{
+                anim.pause();
+                anim.currentTime = {seek_ms};
             }}
         }}""")
         await page.wait_for_timeout(50)
@@ -147,23 +142,23 @@ async def _render_animated(
     await page.goto(tmp.as_uri(), wait_until="networkidle")
     await page.wait_for_timeout(500)  # Let fonts/KaTeX load
 
+    # Pause all animations immediately via Web Animations API
+    await page.evaluate("""() => {
+        for (const anim of document.getAnimations()) {
+            anim.pause();
+        }
+    }""")
+
     total_frames = max(1, int(anim_duration_ms / FRAME_INTERVAL_MS))
     frame_paths: list[Path] = []
 
     for f in range(total_frames):
         time_ms = f * FRAME_INTERVAL_MS
 
-        # Seek all paused animations to `time_ms` via negative delay offset
+        # Seek all animations to the target time using Web Animations API
         await page.evaluate(f"""() => {{
-            const els = document.querySelectorAll('*');
-            for (const el of els) {{
-                const style = getComputedStyle(el);
-                if (style.animationName && style.animationName !== 'none') {{
-                    // Preserve original delay if set, add our time offset
-                    const origDelay = parseFloat(style.animationDelay) || 0;
-                    el.style.animationDelay = (origDelay - {time_ms})  + 'ms';
-                    el.style.animationPlayState = 'paused';
-                }}
+            for (const anim of document.getAnimations()) {{
+                anim.currentTime = {time_ms};
             }}
         }}""")
 

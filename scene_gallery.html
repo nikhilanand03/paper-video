@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scene Template Gallery</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0F1117;
+    color: #E5E7EB;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 280px;
+    background: #1A1D27;
+    border-right: 1px solid #2D3140;
+    padding: 24px 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    overflow-y: auto;
+    z-index: 100;
+  }
+
+  .sidebar h1 {
+    font-size: 18px;
+    font-weight: 700;
+    padding: 0 24px 8px;
+    color: #FFFFFF;
+    letter-spacing: -0.3px;
+  }
+
+  .sidebar .subtitle {
+    font-size: 12px;
+    color: #6B7280;
+    padding: 0 24px 24px;
+    border-bottom: 1px solid #2D3140;
+  }
+
+  .sidebar .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #6B7280;
+    padding: 20px 24px 8px;
+  }
+
+  .sidebar a {
+    display: block;
+    padding: 10px 24px;
+    color: #9CA3AF;
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.15s;
+    border-left: 3px solid transparent;
+  }
+
+  .sidebar a:hover {
+    background: rgba(37, 99, 235, 0.08);
+    color: #E5E7EB;
+  }
+
+  .sidebar a.active {
+    background: rgba(37, 99, 235, 0.12);
+    color: #60A5FA;
+    border-left-color: #2563EB;
+  }
+
+  .sidebar .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .badge.layout { background: rgba(37, 99, 235, 0.15); color: #60A5FA; }
+  .badge.chart { background: rgba(5, 150, 105, 0.15); color: #34D399; }
+
+  /* Main content */
+  .main {
+    margin-left: 280px;
+    flex: 1;
+    padding: 32px 48px;
+  }
+
+  .scene-section {
+    margin-bottom: 64px;
+    scroll-margin-top: 24px;
+  }
+
+  .scene-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .scene-header h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #FFFFFF;
+    letter-spacing: -0.3px;
+  }
+
+  .scene-header .type-badge {
+    font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+
+  .scene-meta {
+    font-size: 13px;
+    color: #6B7280;
+    margin-bottom: 20px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .scene-meta code {
+    background: rgba(255,255,255,0.06);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .frame-wrapper {
+    width: 100%;
+    max-width: 1200px;
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #2D3140;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    position: relative;
+    background: #FAFAF8;
+  }
+
+  .frame-wrapper iframe {
+    width: 1920px;
+    height: 1080px;
+    border: none;
+    transform-origin: top left;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  .data-toggle {
+    margin-top: 12px;
+  }
+
+  .data-toggle button {
+    background: #1A1D27;
+    border: 1px solid #2D3140;
+    color: #9CA3AF;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'IBM Plex Mono', monospace;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .data-toggle button:hover {
+    background: #22253A;
+    color: #E5E7EB;
+  }
+
+  .data-panel {
+    display: none;
+    margin-top: 12px;
+    background: #1A1D27;
+    border: 1px solid #2D3140;
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 1200px;
+    overflow-x: auto;
+  }
+
+  .data-panel.open { display: block; }
+
+  .data-panel pre {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: #D1D5DB;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .data-panel .key { color: #60A5FA; }
+  .data-panel .string { color: #34D399; }
+  .data-panel .number { color: #C084FC; }
+</style>
+</head>
+<body>
+
+<nav class="sidebar" id="sidebar">
+  <h1>Scene Gallery</h1>
+  <div class="subtitle">17 templates with dummy data</div>
+
+  <div class="section-label">Layout Templates</div>
+  <a href="#title_card">Title Card <span class="badge layout">layout</span></a>
+  <a href="#section_header">Section Header <span class="badge layout">layout</span></a>
+  <a href="#flashcard_list">Flashcard List <span class="badge layout">layout</span></a>
+  <a href="#data_table">Data Table <span class="badge layout">layout</span></a>
+  <a href="#big_number">Big Number <span class="badge layout">layout</span></a>
+  <a href="#comparison_split">Comparison Split <span class="badge layout">layout</span></a>
+  <a href="#quote_highlight">Quote Highlight <span class="badge layout">layout</span></a>
+  <a href="#image_with_caption">Image with Caption <span class="badge layout">layout</span></a>
+  <a href="#multi_metric_cards">Multi Metric Cards <span class="badge layout">layout</span></a>
+  <a href="#closing_card">Closing Card <span class="badge layout">layout</span></a>
+
+  <div class="section-label">Chart Templates</div>
+  <a href="#bar_chart">Bar Chart <span class="badge chart">chart</span></a>
+  <a href="#grouped_bar_chart">Grouped Bar Chart <span class="badge chart">chart</span></a>
+  <a href="#horizontal_bar_chart">Horizontal Bar Chart <span class="badge chart">chart</span></a>
+  <a href="#line_chart">Line Chart <span class="badge chart">chart</span></a>
+  <a href="#scatter_plot">Scatter Plot <span class="badge chart">chart</span></a>
+  <a href="#pie_donut_chart">Pie / Donut Chart <span class="badge chart">chart</span></a>
+  <a href="#heatmap">Heatmap <span class="badge chart">chart</span></a>
+</nav>
+
+<main class="main" id="main">
+</main>
+
+<script>
+// ─── Dummy data for all 17 templates ───────────────────────────────────────
+
+const SCENES = [
+  {
+    id: "title_card",
+    name: "Title Card",
+    type: "layout",
+    file: "templates/scenes/title_card.html",
+    animation_ms: 1500,
+    data: {
+      title: "Scaling Language Models: Methods, Analysis & Insights from Training Gopher",
+      authors: [
+        { name: "Jack W. Rae", affiliation: "DeepMind" },
+        { name: "Sebastian Borgeaud", affiliation: "DeepMind" },
+        { name: "Trevor Cai", affiliation: "DeepMind" },
+        { name: "Katie Millican", affiliation: "DeepMind" }
+      ],
+      subtitle: "A comprehensive study of large language model scaling behavior",
+      venue: "ICML 2022",
+      year: "2022"
+    }
+  },
+  {
+    id: "section_header",
+    name: "Section Header",
+    type: "layout",
+    file: "templates/scenes/section_header.html",
+    animation_ms: 1000,
+    data: {
+      section_number: 3,
+      heading: "Methodology",
+      tagline: "How we designed the experiments and built the evaluation framework"
+    }
+  },
+  {
+    id: "flashcard_list",
+    name: "Flashcard List",
+    type: "layout",
+    file: "templates/scenes/flashcard_list.html",
+    animation_ms: 1100,
+    data: {
+      title: "Key Contributions",
+      items: [
+        "Novel attention mechanism reduces compute by 40% while maintaining quality",
+        "Comprehensive evaluation across 152 NLP benchmarks and tasks",
+        "Open-source release of model weights and training infrastructure",
+        "New scaling laws that predict performance across 5 orders of magnitude"
+      ],
+      active_index: 2
+    }
+  },
+  {
+    id: "data_table",
+    name: "Data Table",
+    type: "layout",
+    file: "templates/scenes/data_table.html",
+    animation_ms: 1100,
+    data: {
+      title: "Model Performance Comparison",
+      columns: ["Model", "Params", "MMLU", "HellaSwag", "ARC-C"],
+      rows: [
+        ["GPT-4", "1.8T", "86.4", "95.3", "96.3"],
+        ["Claude 3", "???", "86.8", "95.4", "96.4"],
+        ["Gemini Ultra", "???", "83.7", "87.8", "---"],
+        ["Llama 3 70B", "70B", "79.5", "88.0", "93.0"],
+        ["Mistral Large", "???", "81.2", "89.2", "94.0"]
+      ],
+      best_row: 1,
+      caption: "Table 2: Benchmark results on standard NLP evaluation suite"
+    }
+  },
+  {
+    id: "big_number",
+    name: "Big Number",
+    type: "layout",
+    file: "templates/scenes/big_number.html",
+    animation_ms: 1100,
+    data: {
+      label: "Peak Performance",
+      value: "96.4%",
+      unit: "accuracy",
+      description: "Achieved state-of-the-art on ARC-Challenge benchmark, surpassing the previous best by 2.1 percentage points"
+    }
+  },
+  {
+    id: "comparison_split",
+    name: "Comparison Split",
+    type: "layout",
+    file: "templates/scenes/comparison_split.html",
+    animation_ms: 1000,
+    data: {
+      heading: "Dense vs. Mixture-of-Experts Architecture",
+      left: {
+        label: "Dense Model",
+        tone: "neutral",
+        points: [
+          "All parameters active for every token",
+          "Simpler training pipeline",
+          "Predictable inference cost",
+          "Well-understood scaling laws"
+        ]
+      },
+      right: {
+        label: "Mixture of Experts",
+        tone: "positive",
+        points: [
+          "Sparse activation reduces FLOPs by 6x",
+          "Expert specialization improves quality",
+          "Scales to trillions of parameters efficiently",
+          "Better performance per compute dollar"
+        ]
+      }
+    }
+  },
+  {
+    id: "quote_highlight",
+    name: "Quote Highlight",
+    type: "layout",
+    file: "templates/scenes/quote_highlight.html",
+    animation_ms: 1100,
+    data: {
+      quote: "We find that scaling language models leads to predictable improvements in performance across a wide range of tasks, but the relationship between scale and capability is not always linear.",
+      highlight_phrase: "not always linear",
+      attribution: "Rae et al., 2022"
+    }
+  },
+  {
+    id: "image_with_caption",
+    name: "Image with Caption",
+    type: "layout",
+    file: "templates/scenes/image_with_caption.html",
+    animation_ms: 1200,
+    data: {
+      title: "Model Architecture Overview",
+      image_path: "",
+      caption: "Figure 3: High-level architecture diagram showing the encoder-decoder structure with cross-attention layers",
+      callouts: [
+        { label: "Encoder Stack", x: 25, y: 40 },
+        { label: "Cross-Attention", x: 50, y: 30 },
+        { label: "Decoder Stack", x: 75, y: 40 }
+      ]
+    }
+  },
+  {
+    id: "multi_metric_cards",
+    name: "Multi Metric Cards",
+    type: "layout",
+    file: "templates/scenes/multi_metric_cards.html",
+    animation_ms: 1100,
+    data: {
+      title: "Training Run Summary",
+      metrics: [
+        { value: "280B", label: "Parameters", unit: "", delta: "+4x", direction: "up" },
+        { value: "1.4T", label: "Training Tokens", unit: "", delta: "+2.3x", direction: "up" },
+        { value: "3.2", label: "Loss (final)", unit: "nats", delta: "-18%", direction: "up" },
+        { value: "21", label: "Training Days", unit: "days", delta: "-30%", direction: "up" }
+      ]
+    }
+  },
+  {
+    id: "closing_card",
+    name: "Closing Card",
+    type: "layout",
+    file: "templates/scenes/closing_card.html",
+    animation_ms: 1400,
+    data: {
+      title: "Key Takeaway",
+      summary: "This work demonstrates that careful scaling of language models, combined with high-quality training data and improved architectures, leads to significant and measurable improvements across a broad spectrum of natural language understanding tasks.",
+      paper_url: "https://arxiv.org/abs/2112.11446"
+    }
+  },
+  {
+    id: "bar_chart",
+    name: "Bar Chart",
+    type: "chart",
+    file: "templates/scenes/bar_chart.html",
+    animation_ms: 900,
+    data: {
+      title: "Accuracy by Model Size",
+      labels: ["125M", "350M", "1.3B", "6.7B", "13B", "175B"],
+      values: [42.3, 51.8, 63.2, 74.5, 80.1, 86.4],
+      dataset_label: "MMLU Score",
+      y_label: "Accuracy (%)",
+      highlight_index: 5,
+      caption: "Figure 1: MMLU performance scales log-linearly with model size"
+    }
+  },
+  {
+    id: "grouped_bar_chart",
+    name: "Grouped Bar Chart",
+    type: "chart",
+    file: "templates/scenes/grouped_bar_chart.html",
+    animation_ms: 900,
+    data: {
+      title: "Performance Across Task Categories",
+      labels: ["STEM", "Humanities", "Social Sciences", "Other"],
+      datasets: [
+        { label: "GPT-4", values: [84.2, 89.1, 91.3, 85.7] },
+        { label: "Claude 3", values: [85.1, 88.7, 90.5, 87.2] },
+        { label: "Llama 3 70B", values: [72.4, 81.3, 83.6, 78.9] }
+      ],
+      y_label: "Accuracy (%)",
+      caption: "Figure 4: Multi-category benchmark comparison"
+    }
+  },
+  {
+    id: "horizontal_bar_chart",
+    name: "Horizontal Bar Chart",
+    type: "chart",
+    file: "templates/scenes/horizontal_bar_chart.html",
+    animation_ms: 900,
+    data: {
+      title: "Training Compute by Organization",
+      labels: ["Google", "OpenAI", "Meta", "Anthropic", "Mistral", "Cohere"],
+      values: [9.2, 8.7, 6.1, 5.8, 3.2, 2.1],
+      highlight_label: "Google",
+      unit_label: "Estimated PetaFLOP/s-days (log scale)",
+      caption: "Figure 5: Compute investment comparison"
+    }
+  },
+  {
+    id: "line_chart",
+    name: "Line Chart",
+    type: "chart",
+    file: "templates/scenes/line_chart.html",
+    animation_ms: 900,
+    data: {
+      title: "Training Loss Over Time",
+      labels: ["0", "50K", "100K", "150K", "200K", "250K", "300K"],
+      datasets: [
+        { label: "280B model", values: [4.8, 3.9, 3.5, 3.3, 3.2, 3.15, 3.12] },
+        { label: "70B model", values: [4.8, 4.1, 3.8, 3.6, 3.5, 3.45, 3.42] },
+        { label: "7B model", values: [4.8, 4.3, 4.0, 3.85, 3.78, 3.74, 3.71] }
+      ],
+      x_label: "Training Steps",
+      y_label: "Loss (nats)",
+      caption: "Figure 6: Training curves for different model scales"
+    }
+  },
+  {
+    id: "scatter_plot",
+    name: "Scatter Plot",
+    type: "chart",
+    file: "templates/scenes/scatter_plot.html",
+    animation_ms: 900,
+    data: {
+      title: "Compute vs. Performance Trade-off",
+      x_label: "Training FLOPs (log scale)",
+      y_label: "Benchmark Score",
+      groups: [
+        {
+          label: "Dense Models",
+          points: [
+            { x: 1, y: 42, label: "125M" },
+            { x: 2, y: 52, label: "350M" },
+            { x: 3.5, y: 63, label: "1.3B" },
+            { x: 5, y: 75, label: "6.7B" },
+            { x: 7, y: 80, label: "13B" },
+            { x: 9, y: 86, label: "175B" }
+          ]
+        },
+        {
+          label: "MoE Models",
+          points: [
+            { x: 2, y: 58, label: "MoE-S" },
+            { x: 4, y: 72, label: "MoE-M" },
+            { x: 6, y: 83, label: "MoE-L" },
+            { x: 8, y: 88, label: "MoE-XL" }
+          ]
+        }
+      ],
+      caption: "Figure 7: Scaling efficiency of dense vs. MoE architectures"
+    }
+  },
+  {
+    id: "pie_donut_chart",
+    name: "Pie / Donut Chart",
+    type: "chart",
+    file: "templates/scenes/pie_donut_chart.html",
+    animation_ms: 1000,
+    data: {
+      title: "Training Data Composition",
+      labels: ["Web Crawl", "Books", "Wikipedia", "Code", "Academic Papers"],
+      values: [45, 20, 12, 15, 8],
+      center_value: "1.4T",
+      center_label: "Total Tokens",
+      caption: "Figure 8: Dataset mixture by source"
+    }
+  },
+  {
+    id: "heatmap",
+    name: "Heatmap",
+    type: "chart",
+    file: "templates/scenes/heatmap.html",
+    animation_ms: 900,
+    data: {
+      title: "Cross-lingual Transfer Performance",
+      row_labels: ["English", "French", "German", "Spanish", "Chinese", "Japanese"],
+      col_labels: ["EN", "FR", "DE", "ES", "ZH", "JA"],
+      matrix: [
+        [95, 82, 79, 84, 61, 55],
+        [80, 93, 76, 81, 58, 52],
+        [78, 75, 92, 77, 56, 50],
+        [82, 80, 76, 94, 59, 53],
+        [60, 55, 52, 57, 91, 72],
+        [54, 50, 48, 52, 70, 90]
+      ],
+      show_values: true,
+      color_scale: "blue",
+      caption: "Figure 9: Accuracy matrix for cross-lingual zero-shot transfer"
+    }
+  }
+];
+
+// ─── Render the gallery ────────────────────────────────────────────────────
+
+const main = document.getElementById("main");
+
+SCENES.forEach(scene => {
+  const section = document.createElement("div");
+  section.className = "scene-section";
+  section.id = scene.id;
+
+  const typeBadgeClass = scene.type === "chart" ? "badge chart" : "badge layout";
+
+  section.innerHTML = `
+    <div class="scene-header">
+      <h2>${scene.name}</h2>
+      <span class="${typeBadgeClass}">${scene.type}</span>
+    </div>
+    <div class="scene-meta">
+      Template: <code>${scene.file.split('/').pop()}</code> &nbsp;&bull;&nbsp; Animation: <code>${scene.animation_ms}ms</code>
+    </div>
+    <div class="frame-wrapper" id="fw-${scene.id}">
+      <iframe id="iframe-${scene.id}" sandbox="allow-scripts allow-same-origin"></iframe>
+    </div>
+    <div class="data-toggle">
+      <button onclick="toggleData('${scene.id}')">Show Scene Data</button>
+    </div>
+    <div class="data-panel" id="data-${scene.id}">
+      <pre>${syntaxHighlight(JSON.stringify(scene.data, null, 2))}</pre>
+    </div>
+  `;
+
+  main.appendChild(section);
+});
+
+// ─── Resize iframes to fit ─────────────────────────────────────────────────
+
+function resizeIframes() {
+  SCENES.forEach(scene => {
+    const wrapper = document.getElementById(`fw-${scene.id}`);
+    const iframe = document.getElementById(`iframe-${scene.id}`);
+    if (wrapper && iframe) {
+      const scale = wrapper.clientWidth / 1920;
+      iframe.style.transform = `scale(${scale})`;
+      wrapper.style.height = (1080 * scale) + "px";
+    }
+  });
+}
+
+// ─── Load templates into iframes ───────────────────────────────────────────
+
+function loadScene(scene) {
+  const iframe = document.getElementById(`iframe-${scene.id}`);
+  iframe.onload = () => {
+    try {
+      iframe.contentWindow.SCENE_DATA = scene.data;
+      // Re-run the template script by reloading
+      iframe.contentWindow.location.reload();
+    } catch(e) {
+      // Fallback: set data before load via srcdoc
+    }
+  };
+
+  // Better approach: fetch template HTML, inject SCENE_DATA, and use srcdoc
+  fetch(scene.file)
+    .then(r => r.text())
+    .then(html => {
+      // Replace relative theme.css path with absolute
+      html = html.replace(
+        'href="../theme.css"',
+        `href="templates/theme.css"`
+      );
+
+      // Inject SCENE_DATA and disable all animations
+      const dataScript = `<script>window.SCENE_DATA = ${JSON.stringify(scene.data)};<\/script>`;
+      const noAnimCSS = `<style>*, *::before, *::after { animation: none !important; transition: none !important; }</style>`;
+
+      if (html.includes('</head>')) {
+        html = html.replace('</head>', dataScript + '\n' + noAnimCSS + '\n</head>');
+      } else {
+        html = dataScript + noAnimCSS + html;
+      }
+
+      iframe.srcdoc = html;
+    })
+    .catch(err => {
+      console.error(`Failed to load ${scene.file}:`, err);
+    });
+}
+
+// ─── Lazy load with IntersectionObserver ──────────────────────────────────
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      const scene = SCENES.find(s => s.id === id);
+      if (scene && !entry.target.dataset.loaded) {
+        loadScene(scene);
+        entry.target.dataset.loaded = "true";
+      }
+    }
+  });
+}, { rootMargin: "200px" });
+
+SCENES.forEach(scene => {
+  const el = document.getElementById(scene.id);
+  if (el) observer.observe(el);
+});
+
+// ─── Sidebar active state ──────────────────────────────────────────────────
+
+const sidebarLinks = document.querySelectorAll(".sidebar a");
+const sectionObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      sidebarLinks.forEach(link => {
+        link.classList.toggle("active", link.getAttribute("href") === `#${entry.target.id}`);
+      });
+    }
+  });
+}, { rootMargin: "-20% 0px -70% 0px" });
+
+SCENES.forEach(scene => {
+  const el = document.getElementById(scene.id);
+  if (el) sectionObserver.observe(el);
+});
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
+function toggleData(id) {
+  const panel = document.getElementById(`data-${id}`);
+  panel.classList.toggle("open");
+  const btn = panel.previousElementSibling.querySelector("button");
+  btn.textContent = panel.classList.contains("open") ? "Hide Scene Data" : "Show Scene Data";
+}
+
+function syntaxHighlight(json) {
+  return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+    function(match) {
+      let cls = "number";
+      if (/^"/.test(match)) {
+        cls = /:$/.test(match) ? "key" : "string";
+      }
+      return `<span class="${cls}">${match}</span>`;
+    }
+  );
+}
+
+// ─── Init ──────────────────────────────────────────────────────────────────
+
+window.addEventListener("resize", resizeIframes);
+resizeIframes();
+</script>
+</body>
+</html>
