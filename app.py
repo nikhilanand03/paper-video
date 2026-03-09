@@ -24,6 +24,7 @@ _default_origins = [
     "http://localhost:5174",
     "http://localhost:5175",
     "https://banim.vercel.app",
+    "https://holi-hack.vercel.app",
 ]
 _cors_origins = os.environ.get("CORS_ORIGINS", "").split(",") if os.environ.get("CORS_ORIGINS") else _default_origins
 
