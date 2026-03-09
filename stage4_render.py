@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -36,12 +37,15 @@ class SceneRenderResult:
     fps: int = FPS
     # Hold frame (last animation frame) for looping remainder
     hold_frame_path: Path | None = None
+    # Timing
+    render_time: float = 0.0
 
 
 async def _render_single_scene(
     browser, scene, index: int, output_dir: Path, preview_only: bool,
 ) -> SceneRenderResult:
     """Render a single scene using a dedicated browser page."""
+    t0 = time.monotonic()
     page = await browser.new_page(viewport={"width": 1920, "height": 1080})
     try:
         tmpl = get_template(scene.template)
@@ -57,6 +61,7 @@ async def _render_single_scene(
         else:
             result = await _render_static(page, html, index, output_dir)
 
+        result.render_time = time.monotonic() - t0
         return result
     finally:
         await page.close()

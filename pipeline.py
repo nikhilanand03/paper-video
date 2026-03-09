@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import threading
 import uuid
 from datetime import datetime
 from enum import Enum
@@ -16,7 +17,7 @@ import os
 from stage1_extract import extract_pdf
 from stage2_planner import plan_scenes
 from stage4_render import render_scenes
-from stage5_tts import synthesize_all
+from stage5_tts import synthesize_all, warmup_tts
 from stage6_assembly import assemble
 
 OUTPUT_ROOT = Path(__file__).parent / "output"
@@ -184,6 +185,10 @@ def run_pipeline(
         # Stage 4 — Render templates to frames (Stage 3 eliminated)
         _notify(Status.RENDERING)
 
+        # Pre-warm Azure TTS in background while rendering runs
+        if not frames_only and till_stage not in ("render",):
+            threading.Thread(target=warmup_tts, daemon=True).start()
+
         def _on_scene_done(n: int) -> None:
             job["scenes_done"] = n
 
@@ -202,11 +207,21 @@ def run_pipeline(
             on_scene_done=_on_scene_done,
         )
 
+        # Store per-scene render timing
+        job["render_timing"] = [
+            {"scene": r.scene_index, "mode": r.mode, "frame_count": r.frame_count,
+             "render_time": round(r.render_time, 3)}
+            for r in render_results
+        ]
+
         # Stage 5 — TTS
         _notify(Status.SYNTHESIZING_TTS)
         audio_dir = job_dir / "audio"
         narrations = [s.narration for s in plan.scenes]
-        mp3_paths = synthesize_all(narrations, audio_dir)
+        mp3_paths, tts_timing = synthesize_all(narrations, audio_dir)
+
+        # Store per-scene TTS timing
+        job["tts_timing"] = tts_timing
 
         if till_stage == "tts":
             _notify(Status.DONE)

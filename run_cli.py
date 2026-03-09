@@ -11,7 +11,9 @@ Usage:
 """
 
 import argparse
+import json
 import sys
+import time
 from pathlib import Path
 
 from tqdm import tqdm
@@ -80,13 +82,53 @@ def main() -> None:
     stage_index = {s: i for i, s in enumerate(stages)}
     pbar = tqdm(total=len(stages), bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]")
 
+    stage_times: list[tuple[str, float]] = []
+    stage_start: float = 0.0
+    prev_label: str = ""
+    pipeline_start = time.monotonic()
+
     def on_stage(status, label):
+        nonlocal stage_start, prev_label
+        now = time.monotonic()
+        if prev_label:
+            stage_times.append((prev_label, now - stage_start))
+        stage_start = now
+        prev_label = label
         pbar.set_description(label)
         pbar.n = stage_index.get(status, pbar.n) + 1
         pbar.refresh()
 
     run_pipeline(job_id, on_stage=on_stage, frames_only=frames_only, till_stage=till_stage)
+    # Record the final stage
+    if prev_label:
+        stage_times.append((prev_label, time.monotonic() - stage_start))
     pbar.close()
+    total_time = time.monotonic() - pipeline_start
+
+    # Print timing breakdown
+    print(f"\n{'─' * 48}")
+    print(f"{'Stage':<25} {'Time':>8} {'% Total':>8}")
+    print(f"{'─' * 48}")
+    for label, elapsed in stage_times:
+        pct = (elapsed / total_time * 100) if total_time > 0 else 0
+        print(f"  {label:<23} {elapsed:>7.1f}s {pct:>7.1f}%")
+    print(f"{'─' * 48}")
+    print(f"  {'Total':<23} {total_time:>7.1f}s")
+
+    # Save timing stats as JSON in the job output folder
+    job_data = get_job(job_id)
+    timing_data = {
+        "stages": [
+            {"stage": label, "time_seconds": round(elapsed, 2), "percent": round(elapsed / total_time * 100, 1) if total_time > 0 else 0}
+            for label, elapsed in stage_times
+        ],
+        "total_seconds": round(total_time, 2),
+        "render_per_scene": job_data.get("render_timing"),
+        "tts_per_scene": job_data.get("tts_timing"),
+    }
+    timing_path = Path(job_data["job_dir"]) / "timing.json"
+    timing_path.write_text(json.dumps(timing_data, indent=2))
+    print(f"  Timing saved to: {timing_path}")
 
     job = get_job(job_id)
     if job["status"] == "done":

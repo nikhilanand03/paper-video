@@ -61,61 +61,44 @@ def _make_animated_clip(
     render_result: SceneRenderResult, mp3_path: Path, out_path: Path,
     fallback_duration: float = 8.0
 ) -> Path:
-    """Create clip from animation frame sequence + hold frame for remaining duration."""
+    """Create clip from animation frame sequence + hold frame for remaining duration.
+
+    Two ffmpeg calls: (1) encode anim + hold into one video, (2) mux audio.
+    """
     audio_duration = _get_audio_duration(mp3_path)
     if audio_duration <= 0:
         audio_duration = fallback_duration
 
     anim_duration = render_result.frame_count / render_result.fps
-    clips_to_concat: list[Path] = []
+    remaining = audio_duration - anim_duration
+    fps = render_result.fps
     work_dir = out_path.parent
 
-    # 1) Animated portion from frame sequence
-    anim_clip = work_dir / f"_anim_{out_path.stem}.mp4"
-    _run([
-        "ffmpeg", "-y",
-        "-framerate", str(render_result.fps),
-        "-i", str(render_result.frames_dir / "frame_%04d.png"),
-        "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
-        "-vf", "fps={fps}".format(fps=render_result.fps),
-        str(anim_clip),
-    ])
-    clips_to_concat.append(anim_clip)
+    # Step 1: Build the video track (anim frames + hold frame) in one encode
+    video_clip = work_dir / f"_video_{out_path.stem}.mp4"
 
-    # 2) Hold frame for remaining duration
-    remaining = audio_duration - anim_duration
-    if remaining > 0.1 and render_result.hold_frame_path:
-        hold_clip = work_dir / f"_hold_{out_path.stem}.mp4"
+    # Encode anim frames + hold image as a single video using tpad to freeze
+    # the last frame for the remaining duration — one ffmpeg call, no concat.
+    if remaining > 0.1:
         _run([
             "ffmpeg", "-y",
-            "-loop", "1", "-i", str(render_result.hold_frame_path),
-            "-c:v", "libx264", "-preset", "ultrafast", "-tune", "stillimage",
-            "-pix_fmt", "yuv420p",
-            "-t", str(remaining),
-            str(hold_clip),
-        ])
-        clips_to_concat.append(hold_clip)
-
-    # 3) Concat anim + hold
-    if len(clips_to_concat) == 1:
-        video_clip = clips_to_concat[0]
-    else:
-        concat_list = work_dir / f"_concat_{out_path.stem}.txt"
-        concat_list.write_text(
-            "\n".join(f"file '{p.resolve()}'" for p in clips_to_concat),
-            encoding="utf-8",
-        )
-        video_clip = work_dir / f"_video_{out_path.stem}.mp4"
-        _run([
-            "ffmpeg", "-y",
-            "-f", "concat", "-safe", "0",
-            "-i", str(concat_list),
-            "-c", "copy",
+            "-framerate", str(fps),
+            "-i", str(render_result.frames_dir / "frame_%04d.png"),
+            "-vf", f"fps={fps},tpad=stop_mode=clone:stop_duration={remaining}",
+            "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
             str(video_clip),
         ])
-        concat_list.unlink(missing_ok=True)
+    else:
+        _run([
+            "ffmpeg", "-y",
+            "-framerate", str(fps),
+            "-i", str(render_result.frames_dir / "frame_%04d.png"),
+            "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+            "-vf", f"fps={fps}",
+            str(video_clip),
+        ])
 
-    # 4) Mux audio onto video
+    # Step 2: Mux audio
     _run([
         "ffmpeg", "-y",
         "-i", str(video_clip),
@@ -124,12 +107,7 @@ def _make_animated_clip(
         "-c:a", "aac", "-b:a", "192k",
         str(out_path),
     ])
-
-    # Cleanup temp files
-    for clip in clips_to_concat:
-        clip.unlink(missing_ok=True)
-    video_path = work_dir / f"_video_{out_path.stem}.mp4"
-    video_path.unlink(missing_ok=True)
+    video_clip.unlink(missing_ok=True)
 
     return out_path
 

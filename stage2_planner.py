@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -48,6 +49,9 @@ SECTION_USER_TEMPLATE = """\
 # Paper: {title}
 Authors: {authors}
 
+## Paper outline
+{paper_outline}
+
 You are planning scenes for the **{part_label}** part of a video presentation.
 This is part {part_number} of {total_parts}.
 
@@ -59,7 +63,7 @@ This is part {part_number} of {total_parts}.
 {figures_block}
 {tables_block}
 
-Plan scenes for ONLY the content above. Scene numbers should start at {scene_start}.
+Plan scenes for ONLY the content above. Scene numbers should start at 1.
 Return valid JSON with the scenes array."""
 
 TITLE_USER_TEMPLATE = """\
@@ -188,30 +192,40 @@ def plan_scenes(paper: dict, output_dir: str | Path | None = None) -> ScenePlan:
         planned_dir = Path(output_dir) / "planned_outputs"
         planned_dir.mkdir(parents=True, exist_ok=True)
 
-    all_scenes: list[Scene] = []
-    scene_counter = 1
-
-    # Part 0: Title card
-    title_scenes = _plan_title(
-        client, deployment, paper, scene_counter
+    # Build paper outline so each parallel call knows the full structure
+    paper_outline = "\n".join(
+        f"  {i+1}. {p['label']}" for i, p in enumerate(parts)
     )
-    all_scenes.extend(title_scenes)
-    scene_counter += len(title_scenes)
-    if planned_dir:
-        _save_part(planned_dir, "00_title", title_scenes)
 
-    # Plan each part
-    for part_idx, part in enumerate(parts):
-        part_num = part_idx + 1
-        part_scenes = _plan_part(
-            client, deployment, paper, part, part_num, len(parts),
-            fig_by_num, table_by_num, image_map, scene_counter
+    all_scenes: list[Scene] = []
+
+    # Plan title + all parts in parallel
+    with ThreadPoolExecutor(max_workers=len(parts) + 1) as pool:
+        title_future = pool.submit(
+            _plan_title, client, deployment, paper, 1
         )
-        all_scenes.extend(part_scenes)
-        scene_counter += len(part_scenes)
+        part_futures = [
+            pool.submit(
+                _plan_part, client, deployment, paper, part,
+                part_idx + 1, len(parts),
+                fig_by_num, table_by_num, image_map, 1, paper_outline,
+            )
+            for part_idx, part in enumerate(parts)
+        ]
+
+        # Collect title first
+        title_scenes = title_future.result()
+        all_scenes.extend(title_scenes)
         if planned_dir:
-            slug = f"{part_num:02d}_{part['slug']}"
-            _save_part(planned_dir, slug, part_scenes)
+            _save_part(planned_dir, "00_title", title_scenes)
+
+        # Collect parts in order
+        for part_idx, fut in enumerate(part_futures):
+            part_scenes = fut.result()
+            all_scenes.extend(part_scenes)
+            if planned_dir:
+                slug = f"{part_idx + 1:02d}_{parts[part_idx]['slug']}"
+                _save_part(planned_dir, slug, part_scenes)
 
     # Renumber scenes sequentially
     for i, scene in enumerate(all_scenes):
@@ -253,6 +267,7 @@ def _plan_part(
     table_by_num: dict[int, dict],
     image_map: dict[str, str],
     scene_start: int,
+    paper_outline: str = "",
 ) -> list[Scene]:
     """Plan scenes for one logical part of the paper."""
 
@@ -319,6 +334,7 @@ def _plan_part(
     prompt = SECTION_USER_TEMPLATE.format(
         title=paper.get("title", "Untitled"),
         authors=", ".join(paper.get("authors", [])),
+        paper_outline=paper_outline,
         part_label=part["label"],
         part_number=part_number,
         total_parts=total_parts,
@@ -326,7 +342,6 @@ def _plan_part(
         section_content=section_content,
         figures_block=figures_block,
         tables_block=tables_block,
-        scene_start=scene_start,
     )
 
     scenes = _call_llm(client, deployment, prompt, image_map, scene_start)
