@@ -27,7 +27,7 @@ class Scene(BaseModel):
     template: str
     data: dict[str, Any]
     narration: str
-    duration_seconds: int
+    duration_seconds: int = 8
 
     @field_validator("template")
     @classmethod

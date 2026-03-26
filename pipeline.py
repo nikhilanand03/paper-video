@@ -17,8 +17,12 @@ import os
 from stage1_extract import extract_pdf
 from stage2_planner import plan_scenes
 from stage4_render import render_scenes
+from stage4_render_remotion import render_scenes_remotion
 from stage5_tts import synthesize_all, warmup_tts
 from stage6_assembly import assemble
+
+# Render mode: "html" (Playwright) or "remotion" (React video)
+RENDER_MODE = os.environ.get("RENDER_MODE", "html")
 
 OUTPUT_ROOT = Path(__file__).parent / "output"
 UPLOADED_PDFS_DIR = Path(__file__).parent / "uploaded-pdfs"
@@ -192,6 +196,8 @@ def run_pipeline(
         def _on_scene_done(n: int) -> None:
             job["scenes_done"] = n
 
+        render_mode = os.environ.get("RENDER_MODE", RENDER_MODE)
+
         if frames_only or till_stage == "render":
             preview_dir = job_dir / "preview"
             render_results = render_scenes(
@@ -202,10 +208,16 @@ def run_pipeline(
             return
 
         frames_dir = job_dir / "frames"
-        render_results = render_scenes(
-            plan.scenes, frames_dir,
-            on_scene_done=_on_scene_done,
-        )
+        if render_mode == "remotion":
+            render_results = render_scenes_remotion(
+                plan.scenes, frames_dir,
+                on_scene_done=_on_scene_done,
+            )
+        else:
+            render_results = render_scenes(
+                plan.scenes, frames_dir,
+                on_scene_done=_on_scene_done,
+            )
 
         # Store per-scene render timing
         job["render_timing"] = [

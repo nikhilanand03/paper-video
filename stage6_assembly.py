@@ -112,11 +112,75 @@ def _make_animated_clip(
     return out_path
 
 
+def _make_video_clip(
+    video_path: Path, mp3_path: Path, out_path: Path,
+    fallback_duration: float = 8.0
+) -> Path:
+    """Create clip from pre-rendered video (Remotion) + audio overlay.
+
+    If the audio is longer than the video, the last frame is held via tpad.
+    """
+    audio_duration = _get_audio_duration(mp3_path)
+    if audio_duration <= 0:
+        audio_duration = fallback_duration
+
+    # Get video duration
+    result = subprocess.run(
+        [
+            "ffprobe", "-v", "quiet",
+            "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1",
+            str(video_path),
+        ],
+        capture_output=True, text=True,
+    )
+    video_duration = float(result.stdout.strip()) if result.stdout.strip() else 0
+
+    remaining = audio_duration - video_duration
+    work_dir = out_path.parent
+
+    if remaining > 0.1:
+        # Extend video with tpad, then mux audio
+        extended = work_dir / f"_extended_{out_path.stem}.mp4"
+        _run([
+            "ffmpeg", "-y",
+            "-i", str(video_path),
+            "-vf", f"tpad=stop_mode=clone:stop_duration={remaining}",
+            "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+            "-an",
+            str(extended),
+        ])
+        _run([
+            "ffmpeg", "-y",
+            "-i", str(extended),
+            "-i", str(mp3_path),
+            "-c:v", "copy",
+            "-c:a", "aac", "-b:a", "192k",
+            str(out_path),
+        ])
+        extended.unlink(missing_ok=True)
+    else:
+        # Video is long enough — just mux audio (trim video to audio length)
+        _run([
+            "ffmpeg", "-y",
+            "-i", str(video_path),
+            "-i", str(mp3_path),
+            "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+            "-c:a", "aac", "-b:a", "192k",
+            "-t", str(audio_duration),
+            str(out_path),
+        ])
+
+    return out_path
+
+
 def _assemble_one(args: tuple) -> Path:
     """Assemble a single scene clip (for parallel execution)."""
     i, result, mp3, clips_dir = args
     clip = clips_dir / f"clip_{i:03d}.mp4"
-    if result.mode == "animated" and result.frames_dir:
+    if result.mode == "video" and result.video_path:
+        _make_video_clip(result.video_path, mp3, clip)
+    elif result.mode == "animated" and result.frames_dir:
         _make_animated_clip(result, mp3, clip)
     else:
         png = result.static_path or result.hold_frame_path

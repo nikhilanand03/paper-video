@@ -28,7 +28,7 @@ MAX_CONCURRENT = int(os.environ.get("RENDER_CONCURRENCY", "4"))
 class SceneRenderResult:
     """Result of rendering a single scene."""
     scene_index: int
-    mode: str  # "static" or "animated"
+    mode: str  # "static", "animated", or "video"
     # For static: single PNG path
     static_path: Path | None = None
     # For animated: directory of frame PNGs + count
@@ -37,6 +37,8 @@ class SceneRenderResult:
     fps: int = FPS
     # Hold frame (last animation frame) for looping remainder
     hold_frame_path: Path | None = None
+    # For video (Remotion): pre-rendered MP4 path
+    video_path: Path | None = None
     # Timing
     render_time: float = 0.0
 
