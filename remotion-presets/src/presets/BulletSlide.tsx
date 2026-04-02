@@ -215,8 +215,10 @@ const RoughBulletDot: React.FC<{
 const BulletItemText: React.FC<{
   text: string;
   progress: number;
-}> = ({ text, progress }) => {
+  isActive?: boolean;
+}> = ({ text, progress, isActive = true }) => {
   const opacity = interpolate(progress, [0, 1], [0, 1]);
+  const dimOpacity = opacity > 0 && !isActive ? 0.45 : 1;
   const translateY = interpolate(progress, [0, 1], [10, 0]);
   const blur = interpolate(progress, [0, 0.6], [3, 0], {
     extrapolateRight: "clamp",
@@ -228,7 +230,7 @@ const BulletItemText: React.FC<{
         display: "flex",
         alignItems: "flex-start",
         gap: 24,
-        opacity,
+        opacity: opacity * dimOpacity,
         transform: `translateY(${translateY}px)`,
         filter: blur > 0.1 ? `blur(${blur}px)` : undefined,
       }}
@@ -385,8 +387,13 @@ export const BulletSlide: React.FC<BulletSlideProps> = ({ title, items }) => {
   );
 
   // === BULLET ITEMS ===
+  // Spread items evenly across the scene after entrance, matching narration pace.
   const bulletBaseDelay = Math.round(2.0 * fps);
-  const bulletStagger = Math.round(0.18 * fps);
+  const bulletExitBuffer = Math.round(0.5 * fps);
+  const bulletAvailable = durationInFrames - bulletBaseDelay - bulletExitBuffer;
+  const bulletStagger = items.length > 1
+    ? Math.round(bulletAvailable / items.length)
+    : Math.round(0.5 * fps);
   const bulletDuration = Math.round(0.5 * fps);
 
   // Content padding inside card
@@ -583,11 +590,16 @@ export const BulletSlide: React.FC<BulletSlideProps> = ({ title, items }) => {
                     easing: Easing.out(Easing.quad),
                   },
                 );
+                const nextItemStart = idx < items.length - 1
+                  ? bulletBaseDelay + (idx + 1) * bulletStagger
+                  : durationInFrames;
+                const isActive = frame >= itemStart && frame < nextItemStart;
                 return (
                   <BulletItemText
                     key={idx}
                     text={getItemText(item)}
                     progress={progress}
+                    isActive={isActive}
                   />
                 );
               })}

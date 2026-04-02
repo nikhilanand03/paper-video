@@ -17,7 +17,6 @@ import os
 from stage1_extract import extract_pdf
 from stage2_planner import plan_scenes
 from stage4_render import render_scenes
-from stage4_render_remotion import render_scenes_remotion
 from stage5_tts import synthesize_all, warmup_tts
 from stage6_assembly import assemble
 
@@ -209,6 +208,7 @@ def run_pipeline(
 
         frames_dir = job_dir / "frames"
         if render_mode == "remotion":
+            from stage4_render_remotion import render_scenes_remotion
             render_results = render_scenes_remotion(
                 plan.scenes, frames_dir,
                 on_scene_done=_on_scene_done,

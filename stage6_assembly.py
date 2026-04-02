@@ -6,6 +6,7 @@ Scene clips are assembled in parallel for speed.
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
@@ -98,11 +99,12 @@ def _make_animated_clip(
             str(video_clip),
         ])
 
-    # Step 2: Mux audio
+    # Step 2: Mux audio (explicit mapping to always use TTS audio)
     _run([
         "ffmpeg", "-y",
         "-i", str(video_clip),
         "-i", str(mp3_path),
+        "-map", "0:v:0", "-map", "1:a:0",
         "-c:v", "copy",
         "-c:a", "aac", "-b:a", "192k",
         str(out_path),
@@ -154,6 +156,7 @@ def _make_video_clip(
             "ffmpeg", "-y",
             "-i", str(extended),
             "-i", str(mp3_path),
+            "-map", "0:v:0", "-map", "1:a:0",
             "-c:v", "copy",
             "-c:a", "aac", "-b:a", "192k",
             str(out_path),
@@ -165,6 +168,7 @@ def _make_video_clip(
             "ffmpeg", "-y",
             "-i", str(video_path),
             "-i", str(mp3_path),
+            "-map", "0:v:0", "-map", "1:a:0",
             "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
             "-c:a", "aac", "-b:a", "192k",
             "-t", str(audio_duration),
@@ -191,21 +195,51 @@ def _assemble_one(args: tuple) -> Path:
 
 
 def concatenate_clips(clip_paths: list[Path], output_path: Path) -> Path:
-    """Concatenate scene clips into a single MP4."""
-    list_file = output_path.parent / "concat_list.txt"
-    list_file.write_text(
-        "\n".join(f"file '{p.resolve()}'" for p in clip_paths),
-        encoding="utf-8",
-    )
+    """Concatenate scene clips into a single MP4.
+
+    Uses the concat *filter* (not demuxer) to properly align audio/video
+    timestamps. Batches in groups to avoid hitting shell arg limits.
+    """
+    BATCH = 20  # concat filter limit per pass
+
+    if len(clip_paths) <= BATCH:
+        return _concat_filter(clip_paths, output_path)
+
+    # Multi-pass: concat in batches, then concat the intermediates
+    work_dir = output_path.parent
+    intermediates: list[Path] = []
+    for batch_idx in range(0, len(clip_paths), BATCH):
+        batch = clip_paths[batch_idx : batch_idx + BATCH]
+        tmp = work_dir / f"_concat_batch_{batch_idx // BATCH}.mp4"
+        _concat_filter(batch, tmp)
+        intermediates.append(tmp)
+
+    _concat_filter(intermediates, output_path)
+    for tmp in intermediates:
+        tmp.unlink(missing_ok=True)
+    return output_path
+
+
+def _concat_filter(clip_paths: list[Path], output_path: Path) -> Path:
+    """Concat a list of clips using the ffmpeg concat filter."""
+    n = len(clip_paths)
+    inputs: list[str] = []
+    for p in clip_paths:
+        inputs += ["-i", str(p)]
+
+    filter_parts = "".join(f"[{i}:v:0][{i}:a:0]" for i in range(n))
+    filter_str = f"{filter_parts}concat=n={n}:v=1:a=1[outv][outa]"
 
     _run([
         "ffmpeg", "-y",
-        "-f", "concat", "-safe", "0",
-        "-i", str(list_file),
-        "-c", "copy",
+        *inputs,
+        "-filter_complex", filter_str,
+        "-map", "[outv]", "-map", "[outa]",
+        "-c:v", "libx264", "-preset", "fast", "-crf", "18", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "192k",
+        "-movflags", "+faststart",
         str(output_path),
     ])
-    list_file.unlink(missing_ok=True)
     return output_path
 
 
@@ -231,6 +265,15 @@ def assemble(
 
     # Sort by index to maintain order
     clip_paths.sort(key=lambda p: p.name)
+
+    # Build chapters.json with actual per-clip durations
+    chapters = []
+    offset = 0.0
+    for clip in clip_paths:
+        dur = _get_audio_duration(clip)  # works for video files too via ffprobe
+        chapters.append({"start": round(offset, 3), "duration": round(dur, 3)})
+        offset += dur
+    (output_dir / "chapters.json").write_text(json.dumps(chapters, indent=2))
 
     final = output_dir / "final.mp4"
     concatenate_clips(clip_paths, final)

@@ -325,8 +325,14 @@ export const FlashcardListScene: React.FC<FlashcardListProps> = ({
   );
 
   // === FLASHCARD ITEMS ===
+  // Spread items evenly across the scene after the entrance animation.
+  // Each item gets an equal slice of the remaining time.
   const cardBaseDelay = Math.round(2.0 * fps);
-  const cardStagger = Math.round(0.15 * fps);
+  const exitBuffer = Math.round(0.5 * fps);
+  const availableFrames = durationInFrames - cardBaseDelay - exitBuffer;
+  const cardStagger = items.length > 1
+    ? Math.round(availableFrames / items.length)
+    : Math.round(0.5 * fps);
   const cardDuration = Math.round(0.5 * fps);
   const badgeLeadFrames = Math.round(0.08 * fps); // badges appear slightly before text
 
@@ -551,6 +557,14 @@ export const FlashcardListScene: React.FC<FlashcardListProps> = ({
                   },
                 );
 
+                // Highlight: the active item is the most recently revealed one.
+                // It stays highlighted until the next item appears.
+                const nextItemStart = idx < items.length - 1
+                  ? cardBaseDelay + (idx + 1) * cardStagger
+                  : durationInFrames;
+                const isActive = frame >= itemStart && frame < nextItemStart;
+                const dimOpacity = opacity > 0 && !isActive ? 0.45 : 1;
+
                 return (
                   <div
                     key={idx}
@@ -559,10 +573,11 @@ export const FlashcardListScene: React.FC<FlashcardListProps> = ({
                       alignItems: "center",
                       gap: 20,
                       height: cardItemHeight,
-                      opacity,
+                      opacity: opacity * dimOpacity,
                       transform: `translateY(${translateY}px) scaleY(${scaleY})`,
                       transformOrigin: "top center",
                       filter: blur > 0.1 ? `blur(${blur}px)` : undefined,
+                      transition: "opacity 0.3s ease",
                     }}
                   >
                     {/* Number badge text (overlay on rough.js rect) */}
@@ -593,13 +608,16 @@ export const FlashcardListScene: React.FC<FlashcardListProps> = ({
                       style={{
                         fontFamily: sansFont,
                         fontSize: 24,
-                        fontWeight: 400,
-                        color: "#3D3428",
+                        fontWeight: isActive ? 500 : 400,
+                        color: isActive ? "#1a1a1a" : "#3D3428",
                         lineHeight: "34px",
                         flex: 1,
                         padding: "8px 16px",
-                        backgroundColor: `rgba(245, 240, 232, ${0.5 * opacity})`,
+                        backgroundColor: isActive
+                          ? `rgba(37, 99, 235, ${0.06 * opacity})`
+                          : `rgba(245, 240, 232, ${0.5 * opacity})`,
                         borderRadius: 4,
+                        borderLeft: isActive ? `3px solid ${ACCENT}` : "3px solid transparent",
                       }}
                     >
                       {item}

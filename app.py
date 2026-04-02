@@ -158,6 +158,16 @@ async def download_video(job_id: str):
     return FileResponse(final, media_type="video/mp4", filename=f"{job_id}.mp4")
 
 
+@app.get("/chapters/{job_id}")
+async def get_chapters(job_id: str):
+    """Return scene chapter timestamps for seek support."""
+    job_dir = OUTPUT_ROOT / job_id
+    chapters_file = job_dir / "chapters.json"
+    if chapters_file.exists():
+        return json.loads(chapters_file.read_text())
+    raise HTTPException(404, "Chapters not found.")
+
+
 # ── Playground API ────────────────────────────────────────────────────────────
 
 

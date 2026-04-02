@@ -1,6 +1,8 @@
 platform/
-node_modules/
+**/node_modules/
+.venv/
 .git/
+sample-pdfs/
 .env
 keys.json
 output/

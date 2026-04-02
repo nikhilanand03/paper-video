@@ -28,8 +28,12 @@ import {
   saveNote,
   deleteNote,
   templateInfo,
+  seedSampleItems,
+  examplePapers,
+  mockPaperData,
+  saveVideoToLibrary,
 } from "../lib/data";
-import { getStreamUrl, getDownloadUrl } from "../lib/api";
+import { getStreamUrl, getDownloadUrl, getChapters, getJobData } from "../lib/api";
 import { Textarea } from "../components/ui/textarea";
 
 export default function Viewer() {
@@ -53,8 +57,35 @@ export default function Viewer() {
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [hoveredSegment, setHoveredSegment] = useState<number | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [chapters, setChapters] = useState<
+    { start: number; duration: number }[] | null
+  >(null);
+  const [realScenes, setRealScenes] = useState<any[] | null>(null);
 
-  const video = arxivId ? getVideoByArxivId(arxivId) : getVideoById(videoId!);
+  // Try localStorage first; if not found, seed samples and retry;
+  // if still not found, create entry on-the-fly from sample data
+  seedSampleItems();
+  let video = arxivId ? getVideoByArxivId(arxivId) : getVideoById(videoId!);
+  if (!video && arxivId) {
+    const sample = examplePapers.find((p) => p.arxivId === arxivId);
+    if (sample) {
+      const data = mockPaperData[sample.id];
+      if (data) {
+        const entry = {
+          id: `sample_${sample.id}`,
+          ...data,
+          arxivId: sample.arxivId,
+          realJobId: sample.realJobId,
+          duration: sample.duration || data.duration,
+          generatedAt: new Date().toISOString(),
+          views: 0,
+          isSample: true,
+        };
+        saveVideoToLibrary(entry.id, entry);
+        video = entry;
+      }
+    }
+  }
   const resolvedVideoId = video?.id || videoId;
 
   useEffect(() => {
@@ -63,6 +94,29 @@ export default function Viewer() {
       setNotes(getNotes(resolvedVideoId));
     }
   }, [resolvedVideoId]);
+
+  // Fetch real chapter timestamps and scene data for backend videos
+  useEffect(() => {
+    if (video?.realJobId) {
+      getChapters(video.realJobId).then((ch) => {
+        if (ch && ch.length > 0) setChapters(ch);
+      });
+      getJobData(video.realJobId).then((data) => {
+        if (data?.plan?.scenes) {
+          setRealScenes(
+            data.plan.scenes.map((s: any, i: number) => ({
+              id: s.scene_number || i + 1,
+              type: s.template,
+              label: s.data?.title || s.data?.heading || s.template.replace(/_/g, " "),
+              duration: s.duration_seconds || 10,
+              narration: s.narration,
+              sectionId: null,
+            }))
+          );
+        }
+      }).catch(() => {});
+    }
+  }, [video?.realJobId]);
 
   // Fullscreen toggle
   const handleFullscreen = () => {
@@ -105,18 +159,16 @@ export default function Viewer() {
   }, [isPlaying, playbackSpeed, video, effectiveDuration]);
 
   useEffect(() => {
-    // Update current scene based on time
-    if (video?.scenes) {
-      let accumulatedTime = 0;
-      for (let i = 0; i < video.scenes.length; i++) {
-        accumulatedTime += video.scenes[i].duration;
-        if (currentTime < accumulatedTime) {
+    // Update current scene based on time, using real chapters if available
+    if (video?.scenes && sceneSegments.length > 0) {
+      for (let i = sceneSegments.length - 1; i >= 0; i--) {
+        if (currentTime >= sceneSegments[i].startTime) {
           setCurrentSceneIndex(i);
           break;
         }
       }
     }
-  }, [currentTime, video]);
+  }, [currentTime, video, chapters]);
 
   if (!video) {
     return (
@@ -147,14 +199,14 @@ export default function Viewer() {
   };
 
   const handleSceneClick = (index: number) => {
-    let time = 0;
-    for (let i = 0; i < index; i++) {
-      time += video.scenes[i].duration;
-    }
-    setCurrentTime(time);
-    setCurrentSceneIndex(index);
-    if (videoElRef.current) {
-      videoElRef.current.currentTime = time;
+    // Use sceneSegments for accurate seek when available
+    if (sceneSegments[index]) {
+      const time = sceneSegments[index].startTime;
+      setCurrentTime(time);
+      setCurrentSceneIndex(index);
+      if (videoElRef.current) {
+        videoElRef.current.currentTime = time;
+      }
     }
   };
 
@@ -165,7 +217,7 @@ export default function Viewer() {
   };
 
   const handleNextScene = () => {
-    if (currentSceneIndex < video.scenes.length - 1) {
+    if (currentSceneIndex < activeScenes.length - 1) {
       handleSceneClick(currentSceneIndex + 1);
     }
   };
@@ -208,12 +260,17 @@ export default function Viewer() {
 
   const progress = effectiveDuration > 0 ? (currentTime / effectiveDuration) * 100 : 0;
 
-  const currentScene = video.scenes[currentSceneIndex];
+  // Use real scenes from backend when available, else fall back to localStorage mock
+  const activeScenes = realScenes && chapters && realScenes.length === chapters.length
+    ? realScenes
+    : video.scenes;
+
+  const currentScene = activeScenes[currentSceneIndex];
   const currentSection = video.sections?.find(
     (s: any) => s.id === currentScene?.sectionId
   );
   const currentTemplateInfo = templateInfo[currentScene?.type] || {
-    label: currentScene?.type,
+    label: currentScene?.type?.replace(/_/g, " "),
     icon: "📄",
   };
 
@@ -221,15 +278,26 @@ export default function Viewer() {
   const hasRealVideo = !!video.realJobId;
   const streamUrl = hasRealVideo ? getStreamUrl(video.realJobId) : null;
 
-  // Compute scene segment data for the chapter progress bar
-  const totalSceneDuration = video.scenes.reduce(
-    (sum: number, s: any) => sum + s.duration,
-    0
-  );
-  const sceneSegments = video.scenes.map((scene: any, index: number) => {
+  // Compute scene segment data for the chapter progress bar.
+  // Use real chapter timestamps from backend when available (matched by count to activeScenes).
+  const useRealChapters = chapters && chapters.length === activeScenes.length;
+  const totalSceneDuration = useRealChapters
+    ? chapters.reduce((sum, ch) => sum + ch.duration, 0)
+    : activeScenes.reduce((sum: number, s: any) => sum + s.duration, 0);
+  const sceneSegments = activeScenes.map((scene: any, index: number) => {
+    if (useRealChapters) {
+      const ch = chapters[index];
+      return {
+        scene,
+        index,
+        startTime: ch.start,
+        endTime: ch.start + ch.duration,
+        widthPercent: (ch.duration / totalSceneDuration) * 100,
+      };
+    }
     let startTime = 0;
     for (let i = 0; i < index; i++) {
-      startTime += video.scenes[i].duration;
+      startTime += activeScenes[i].duration;
     }
     return {
       scene,
@@ -495,7 +563,16 @@ export default function Viewer() {
                             transform: isHovered ? "scaleY(1.4)" : "scaleY(1)",
                             transformOrigin: "bottom",
                           }}
-                          onClick={() => handleSceneClick(seg.index)}
+                          onClick={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                            const seekTime = seg.startTime + frac * (seg.endTime - seg.startTime);
+                            setCurrentTime(seekTime);
+                            setCurrentSceneIndex(seg.index);
+                            if (videoElRef.current) {
+                              videoElRef.current.currentTime = seekTime;
+                            }
+                          }}
                           onMouseEnter={() => setHoveredSegment(seg.index)}
                           onMouseLeave={() => setHoveredSegment(null)}
                         >
@@ -529,7 +606,7 @@ export default function Viewer() {
                     {formatTime(currentTime)} / {formatTime(effectiveDuration)}
                   </span>
                   <span className="text-white/50 text-sm">
-                    {video.scenes[currentSceneIndex]?.label}
+                    {activeScenes[currentSceneIndex]?.label}
                   </span>
                   <div className="flex-1" />
                   <select
@@ -581,7 +658,7 @@ export default function Viewer() {
                   {new Date(video.generatedAt).toLocaleDateString()}
                 </span>
                 <span>·</span>
-                <span>{video.scenes.length} scenes</span>
+                <span>{activeScenes.length} scenes</span>
               </div>
               <div className="flex gap-2 flex-wrap">
                 {video.url && (

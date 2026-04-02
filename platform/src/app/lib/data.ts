@@ -1,4 +1,4 @@
-// Mock data for example papers
+// Sample papers with real generated videos
 export const examplePapers = [
   {
     id: "attention",
@@ -6,6 +6,10 @@ export const examplePapers = [
     authors: ["Vaswani et al."],
     url: "https://arxiv.org/abs/1706.03762",
     arxivId: "1706.03762",
+    realJobId: "mars_attention2",
+    venue: "NeurIPS 2017",
+    year: 2017,
+    duration: 444,
   },
   {
     id: "bert",
@@ -13,13 +17,21 @@ export const examplePapers = [
     authors: ["Devlin et al."],
     url: "https://arxiv.org/abs/1810.04805",
     arxivId: "1810.04805",
+    realJobId: "mars_bert1",
+    venue: "NAACL 2019",
+    year: 2019,
+    duration: 382,
   },
   {
-    id: "alphafold",
-    title: "Highly Accurate Protein Structure Prediction with AlphaFold",
-    authors: ["Jumper et al."],
-    url: "https://doi.org/10.1038/s41586-021-03819-2",
-    arxivId: null,
+    id: "contextfocus",
+    title: "ContextFocus: Activation Steering for Contextual Faithfulness in LLMs",
+    authors: ["Anand et al."],
+    url: "https://arxiv.org/abs/2601.04131",
+    arxivId: "2601.04131",
+    realJobId: "mars_contextfocus1",
+    venue: "arXiv 2025",
+    year: 2025,
+    duration: 397,
   },
 ];
 
@@ -392,32 +404,38 @@ export const mockPaperData: Record<string, any> = {
     videoUrl: "/mock-video.mp4",
     duration: 82,
   },
-  alphafold: {
-    title: "Highly Accurate Protein Structure Prediction with AlphaFold",
-    authors: ["John Jumper", "Richard Evans", "Alexander Pritzel", "et al."],
-    venue: "Nature",
-    year: 2021,
-    url: "https://doi.org/10.1038/s41586-021-03819-2",
+  contextfocus: {
+    title: "ContextFocus: Activation Steering for Contextual Faithfulness in Large Language Models",
+    authors: [
+      "Nikhil Anand",
+      "Shwetha Somasundaram",
+      "Anirudh Phukan",
+      "Apoorv Saxena",
+      "Koyel Mukherjee",
+    ],
+    venue: "arXiv",
+    year: 2025,
+    url: "https://arxiv.org/abs/2601.04131",
     abstract:
-      "Proteins are essential to life, and understanding their structure can facilitate a mechanistic understanding of their function. Through an enormous experimental effort, the structures of around 100,000 unique proteins have been determined, but this represents a small fraction of the billions of known protein sequences. Structural coverage is bottlenecked by the months to years of painstaking effort required to determine a single protein structure. Accurate computational approaches are needed to address this gap and to enable large-scale structural bioinformatics. AlphaFold produces highly accurate structures.",
+      "When external context contradicts a model's internal knowledge, the model tends to rely on memorized facts rather than the provided evidence. This work proposes ContextFocus, a lightweight activation steering method that enhances faithfulness to retrieved context without requiring model fine-tuning or significant computational overhead.",
     sections: [
       {
         id: "intro",
         title: "Introduction",
         content:
-          "The three-dimensional structure of a protein is intimately connected with its biological function. AlphaFold is based on a neural network trained to predict the distance between pairs of residues and to predict the angles between chemical bonds.",
+          "Large language models often struggle to remain faithful to provided context when it conflicts with their parametric memory. ContextFocus addresses this by steering model activations toward contextual faithfulness.",
       },
       {
         id: "method",
         title: "Method",
         content:
-          "AlphaFold uses a novel architecture called Evoformer that processes multiple sequence alignments (MSAs) and pair representations. The model iteratively refines its predictions through recycling, passing outputs back as inputs for further refinement.",
+          "ContextFocus uses activation steering vectors derived from contrastive examples to shift model behavior toward context-faithful outputs at inference time, without any fine-tuning.",
       },
       {
         id: "results",
         title: "Results",
         content:
-          "In CASP14, AlphaFold achieved a median GDT score of 92.4, far exceeding the next best method at 76. This level of accuracy is considered comparable to experimental methods for many proteins.",
+          "Evaluated on the ConFiQA benchmark against baselines including ContextDPO and COIECD, ContextFocus demonstrates complementary improvements to prompting strategies and remains effective on larger models.",
       },
     ],
     scenes: [
@@ -427,92 +445,48 @@ export const mockPaperData: Record<string, any> = {
         label: "Title",
         duration: 8,
         narration:
-          "AlphaFold, developed by DeepMind, achieved a breakthrough in protein structure prediction, solving a 50-year grand challenge of biology.",
+          "ContextFocus proposes a lightweight activation steering method to make large language models more faithful to retrieved context, without any fine-tuning.",
         sectionId: "intro",
       },
       {
         id: 2,
         type: "quote_highlight",
-        label: "The Challenge",
+        label: "The Problem",
         duration: 10,
         narration:
-          "Understanding protein structure is essential for biology, but only about 100,000 structures had been determined experimentally — a tiny fraction of billions of known sequences. AlphaFold changed that equation entirely.",
+          "When external context contradicts a model's memorized knowledge, LLMs tend to rely on their parametric memory rather than the provided evidence. This is a critical reliability issue for RAG systems.",
         sectionId: "intro",
       },
       {
         id: 3,
-        type: "section_header",
-        label: "Method",
-        duration: 4,
-        narration: "Let's look at how AlphaFold works.",
+        type: "flashcard_list",
+        label: "Approach",
+        duration: 12,
+        narration:
+          "ContextFocus derives steering vectors from contrastive examples and applies them at inference time to shift model activations toward context-faithful behavior.",
         sectionId: "method",
       },
       {
         id: 4,
-        type: "flashcard_list",
-        label: "Architecture Components",
+        type: "bar_chart",
+        label: "ConFiQA Results",
         duration: 12,
         narration:
-          "AlphaFold has three key components: the Evoformer module that processes multiple sequence alignments, the structure module that predicts 3D coordinates, and a recycling mechanism that iteratively refines predictions.",
-        sectionId: "method",
+          "On the ConFiQA benchmark, ContextFocus outperforms strong baselines including ContextDPO and COIECD while maintaining fluency and efficiency.",
+        sectionId: "results",
       },
       {
         id: 5,
-        type: "image_with_caption",
-        label: "Evoformer Architecture",
-        duration: 15,
-        narration:
-          "The Evoformer processes MSA representations and pair representations in alternating attention blocks. This allows the model to reason about evolutionary relationships and spatial proximity simultaneously.",
-        sectionId: "method",
-      },
-      {
-        id: 6,
-        type: "section_header",
-        label: "Results",
-        duration: 4,
-        narration:
-          "The results at CASP14 were nothing short of revolutionary.",
-        sectionId: "results",
-      },
-      {
-        id: 7,
-        type: "big_number",
-        label: "GDT Score",
-        duration: 10,
-        narration:
-          "AlphaFold achieved a median GDT score of 92.4 in the CASP14 competition, far surpassing the next best method at 76. Scores above 90 are generally considered comparable to experimental accuracy.",
-        sectionId: "results",
-      },
-      {
-        id: 8,
-        type: "bar_chart",
-        label: "CASP14 Rankings",
-        duration: 12,
-        narration:
-          "The gap between AlphaFold and the competition was unprecedented in CASP history. No previous method had come close to this level of accuracy, and the improvement was immediately recognized as a scientific breakthrough.",
-        sectionId: "results",
-      },
-      {
-        id: 9,
-        type: "scatter_plot",
-        label: "Accuracy vs Difficulty",
-        duration: 12,
-        narration:
-          "Even on the most challenging protein targets, AlphaFold maintained high accuracy. This scatter plot shows that while other methods degraded rapidly on harder targets, AlphaFold remained robust.",
-        sectionId: "results",
-      },
-      {
-        id: 10,
         type: "closing_card",
         label: "Takeaway",
         duration: 8,
         narration:
-          "AlphaFold solved a 50-year grand challenge, and DeepMind subsequently predicted structures for nearly all known proteins, transforming structural biology forever.",
+          "ContextFocus offers a practical, zero-cost solution for improving LLM faithfulness to retrieved context, complementing existing prompting strategies.",
         sectionId: "results",
       },
     ],
     videoUrl: "/mock-video.mp4",
-    duration: 95,
+    duration: 340,
   },
 };
 
@@ -648,20 +622,19 @@ export function getVideoByArxivId(arxivId: string) {
 // Seed sample showcase items into library on first visit
 export function seedSampleItems() {
   const library = getLibrary();
-  const SEED_KEY = "samples_seeded";
+  const SEED_KEY = "samples_seeded_v8";
   if (localStorage.getItem(SEED_KEY)) return;
 
   for (const paper of examplePapers) {
     const data = mockPaperData[paper.id];
     if (!data) continue;
-    const alreadyExists = library.some(
+
+    const existingIdx = library.findIndex(
       (v: any) => v.arxivId === paper.arxivId || v.title === data.title
     );
-    if (alreadyExists) continue;
 
-    const videoId = generateId();
     const entry = {
-      id: videoId,
+      id: existingIdx >= 0 ? library[existingIdx].id : generateId(),
       title: data.title,
       authors: data.authors,
       venue: data.venue,
@@ -670,13 +643,19 @@ export function seedSampleItems() {
       abstract: data.abstract,
       sections: data.sections,
       scenes: data.scenes,
-      duration: data.duration,
+      duration: paper.duration || data.duration,
       arxivId: paper.arxivId,
+      realJobId: paper.realJobId || undefined,
       generatedAt: new Date().toISOString(),
-      views: 0,
+      views: existingIdx >= 0 ? library[existingIdx].views : 0,
       isSample: true,
     };
-    library.unshift(entry);
+
+    if (existingIdx >= 0) {
+      library[existingIdx] = entry;
+    } else {
+      library.unshift(entry);
+    }
   }
 
   localStorage.setItem("library", JSON.stringify(library));

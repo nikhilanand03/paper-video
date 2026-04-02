@@ -27,7 +27,17 @@ class Scene(BaseModel):
     template: str
     data: dict[str, Any]
     narration: str
-    duration_seconds: int = 8
+    duration_seconds: int | None = 8
+
+    @field_validator("duration_seconds", mode="before")
+    @classmethod
+    def coerce_duration(cls, v: Any) -> int:
+        if v is None or v == "":
+            return 8
+        try:
+            return int(v)
+        except (ValueError, TypeError):
+            return 8
 
     @field_validator("template")
     @classmethod
@@ -373,6 +383,10 @@ def _call_llm(
         raw = raw.rsplit("```", 1)[0]
 
     data = json.loads(raw)
+    # Ensure duration_seconds has a default for every scene (LLM often omits it)
+    for scene_dict in data.get("scenes", []):
+        if "duration_seconds" not in scene_dict or scene_dict["duration_seconds"] is None:
+            scene_dict["duration_seconds"] = 8
     plan = ScenePlan.model_validate(data)
 
     # Post-validation: resolve image keys

@@ -22,6 +22,7 @@ export default defineConfig({
       '/job': 'http://localhost:8000',
       '/stream': 'http://localhost:8000',
       '/download': 'http://localhost:8000',
+      '/chapters': 'http://localhost:8000',
     },
   },
 })

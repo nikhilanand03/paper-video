@@ -1,10 +1,10 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router";
-import { Upload, Link as LinkIcon, Loader2, CheckCircle2 } from "lucide-react";
+import { Upload, Link as LinkIcon, Loader2, CheckCircle2, Play, Clock } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { examplePapers, getOrCreateVideoId, seedSampleItems } from "../lib/data";
-import { uploadPdf } from "../lib/api";
+import { uploadPdf, getStreamUrl } from "../lib/api";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -90,6 +90,12 @@ export default function Home() {
       const jobId = getOrCreateVideoId(paperId);
       navigate(`/video/${jobId}?paperId=${paperId}`);
     }
+  };
+
+  const formatDuration = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
   const canGenerate = (file || url.length > 0) && !isUploading;
@@ -240,29 +246,6 @@ export default function Home() {
           )}
         </Button>
 
-        {/* Example papers */}
-        <div className="mt-12 text-center">
-          <p style={{ color: "#6B7280" }} className="mb-4">
-            Try it with:
-          </p>
-          <div className="flex flex-wrap gap-3 justify-center">
-            {examplePapers.map((paper) => (
-              <button
-                key={paper.id}
-                onClick={() => handleExampleClick(paper.id)}
-                className="px-4 py-2 rounded-lg border transition-all hover:border-[#2563EB] hover:bg-white hover:shadow-md cursor-pointer"
-                style={{
-                  borderColor: "#E5E7EB",
-                  color: "#1A1A1A",
-                  backgroundColor: "#FFFFFF",
-                }}
-              >
-                {paper.title}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Info text */}
         <p
           className="mt-8 text-center text-sm"
@@ -272,7 +255,76 @@ export default function Home() {
         </p>
       </div>
 
-      {/* Below fold - How it works */}
+      {/* Showcase — sample videos */}
+      <div className="max-w-5xl mx-auto px-8 pt-16 pb-8">
+        <h2
+          className="text-center mb-10"
+          style={{
+            fontFamily: "'Instrument Serif', serif",
+            fontSize: "36px",
+            letterSpacing: "-0.5px",
+            color: "#1A1A1A",
+            fontWeight: 400,
+          }}
+        >
+          See it in action
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {examplePapers.map((paper) => (
+            <button
+              key={paper.id}
+              onClick={() => handleExampleClick(paper.id)}
+              className="group text-left bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden transition-all hover:shadow-lg hover:border-[#2563EB]/30 cursor-pointer"
+            >
+              {/* Video thumbnail */}
+              <div className="relative aspect-video bg-[#0F172A] flex items-center justify-center overflow-hidden">
+                {paper.realJobId ? (
+                  <video
+                    src={getStreamUrl(paper.realJobId)}
+                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                    muted
+                    preload="metadata"
+                    onLoadedMetadata={(e) => {
+                      (e.target as HTMLVideoElement).currentTime = 5;
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-[#1E293B] to-[#0F172A]" />
+                )}
+                {/* Play overlay */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity scale-90 group-hover:scale-100">
+                    <Play size={24} className="text-[#1A1A1A] ml-1" fill="#1A1A1A" />
+                  </div>
+                </div>
+                {/* Duration badge */}
+                {paper.duration && (
+                  <div className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded bg-black/60 text-white text-xs">
+                    <Clock size={10} />
+                    {formatDuration(paper.duration)}
+                  </div>
+                )}
+              </div>
+              {/* Card body */}
+              <div className="p-4">
+                <p
+                  className="font-medium text-sm leading-snug mb-1 line-clamp-2"
+                  style={{ color: "#1A1A1A" }}
+                >
+                  {paper.title}
+                </p>
+                <p className="text-xs" style={{ color: "#6B7280" }}>
+                  {paper.authors.join(", ")}
+                  {paper.venue && ` · ${paper.venue}`}
+                </p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* How it works */}
       <div className="max-w-4xl mx-auto px-8 py-16">
         <div className="bg-white rounded-2xl p-8 border border-[#E5E7EB]">
           <h2

@@ -87,6 +87,19 @@ export function getDownloadUrl(jobId: string): string {
   return `${API_BASE}/download/${jobId}`;
 }
 
+/** Fetch real scene chapter timestamps for a job. */
+export async function getChapters(
+  jobId: string
+): Promise<{ start: number; duration: number }[] | null> {
+  try {
+    const res = await fetch(`${API_BASE}/chapters/${jobId}`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
 /** Check if the backend is reachable. */
 export async function checkBackend(): Promise<boolean> {
   try {
