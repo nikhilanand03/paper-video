@@ -129,9 +129,9 @@ describe('examplePapers', () => {
     expect(bert).toBeDefined();
   });
 
-  it('contains the AlphaFold paper', () => {
-    const af = examplePapers.find((p) => p.id === 'alphafold');
-    expect(af).toBeDefined();
+  it('contains the ContextFocus paper', () => {
+    const cf = examplePapers.find((p) => p.id === 'contextfocus');
+    expect(cf).toBeDefined();
   });
 });
 

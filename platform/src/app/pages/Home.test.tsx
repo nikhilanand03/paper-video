@@ -21,7 +21,7 @@ describe('Home page', () => {
     renderHome();
     expect(screen.getByText(/Attention Is All You Need/i)).toBeInTheDocument();
     expect(screen.getByText(/BERT/i)).toBeInTheDocument();
-    expect(screen.getByText(/AlphaFold/i)).toBeInTheDocument();
+    expect(screen.getByText(/ContextFocus/i)).toBeInTheDocument();
   });
 
   it('has the Generate button disabled when no file or URL is provided', () => {
