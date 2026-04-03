@@ -7,6 +7,7 @@ export const examplePapers = [
     url: "https://arxiv.org/abs/1706.03762",
     arxivId: "1706.03762",
     realJobId: "mars_attention2",
+    blobUrl: "https://banimvideostorage.blob.core.windows.net/videos/mars_attention2/final.mp4",
     venue: "NeurIPS 2017",
     year: 2017,
     duration: 444,
@@ -18,6 +19,7 @@ export const examplePapers = [
     url: "https://arxiv.org/abs/1810.04805",
     arxivId: "1810.04805",
     realJobId: "mars_bert1",
+    blobUrl: "https://banimvideostorage.blob.core.windows.net/videos/mars_bert1/final.mp4",
     venue: "NAACL 2019",
     year: 2019,
     duration: 382,
@@ -29,6 +31,7 @@ export const examplePapers = [
     url: "https://arxiv.org/abs/2601.04131",
     arxivId: "2601.04131",
     realJobId: "mars_contextfocus1",
+    blobUrl: "https://banimvideostorage.blob.core.windows.net/videos/mars_contextfocus1/final.mp4",
     venue: "arXiv 2025",
     year: 2025,
     duration: 397,
@@ -622,7 +625,7 @@ export function getVideoByArxivId(arxivId: string) {
 // Seed sample showcase items into library on first visit
 export function seedSampleItems() {
   const library = getLibrary();
-  const SEED_KEY = "samples_seeded_v8";
+  const SEED_KEY = "samples_seeded_v9";
   if (localStorage.getItem(SEED_KEY)) return;
 
   for (const paper of examplePapers) {
@@ -646,6 +649,7 @@ export function seedSampleItems() {
       duration: paper.duration || data.duration,
       arxivId: paper.arxivId,
       realJobId: paper.realJobId || undefined,
+      blobUrl: paper.blobUrl || undefined,
       generatedAt: new Date().toISOString(),
       views: existingIdx >= 0 ? library[existingIdx].views : 0,
       isSample: true,

@@ -76,6 +76,7 @@ export default function Viewer() {
           ...data,
           arxivId: sample.arxivId,
           realJobId: sample.realJobId,
+          blobUrl: sample.blobUrl,
           duration: sample.duration || data.duration,
           generatedAt: new Date().toISOString(),
           views: 0,
@@ -274,9 +275,9 @@ export default function Viewer() {
     icon: "📄",
   };
 
-  // Check if we have a real video from the backend
-  const hasRealVideo = !!video.realJobId;
-  const streamUrl = hasRealVideo ? getStreamUrl(video.realJobId) : null;
+  // Check if we have a real video — prefer blob URL (works without backend), fall back to stream
+  const hasRealVideo = !!video.realJobId || !!video.blobUrl;
+  const streamUrl = video.blobUrl || (video.realJobId ? getStreamUrl(video.realJobId) : null);
 
   // Compute scene segment data for the chapter progress bar.
   // Use real chapter timestamps from backend when available (matched by count to activeScenes).

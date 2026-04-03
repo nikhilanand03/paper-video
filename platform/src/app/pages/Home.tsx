@@ -279,9 +279,9 @@ export default function Home() {
             >
               {/* Video thumbnail */}
               <div className="relative aspect-video bg-[#0F172A] flex items-center justify-center overflow-hidden">
-                {paper.realJobId ? (
+                {(paper.blobUrl || paper.realJobId) ? (
                   <video
-                    src={getStreamUrl(paper.realJobId)}
+                    src={paper.blobUrl || getStreamUrl(paper.realJobId)}
                     className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                     muted
                     preload="metadata"
