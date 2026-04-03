@@ -174,6 +174,8 @@ export default function Processing() {
   const pollingRef = useRef<ReturnType<typeof setInterval>>();
   const elapsedTimeRef = useRef(0);
   const pollFailCountRef = useRef(0);
+  const paperInfoFetchedRef = useRef(false);
+  const scenePlanFetchedRef = useRef(false);
 
   const knownPaper = isExample ? mockPaperData[paperId!] : null;
 
@@ -183,8 +185,7 @@ export default function Processing() {
   useEffect(() => {
     if (!useRealBackend) return;
 
-    // Poll the backend /status/{jobId} every 2 seconds
-    pollingRef.current = setInterval(async () => {
+    const poll = async () => {
       try {
         const status = await getJobStatus(jobId!);
         pollFailCountRef.current = 0;
@@ -193,22 +194,20 @@ export default function Processing() {
         setScenesTotal(status.scenes_total);
         setScenesDone(status.scenes_done);
 
-        // After extraction, try to fetch real paper info
-        if (stageIdx >= 1 && !paperInfo) {
+        // After extraction, fetch real paper info (once)
+        if (stageIdx >= 1 && !paperInfoFetchedRef.current) {
+          paperInfoFetchedRef.current = true;
           try {
             const data = await getJobData(jobId!);
             if (data.paper) {
-              // Extract abstract from sections if not top-level
               const sections = data.paper.sections || [];
               const abstractSection = sections.find((s: any) => s.heading?.toLowerCase() === "abstract");
-              const paperAbstract = data.paper.abstract || abstractSection?.body || "";
-
               setPaperInfo({
                 title: data.paper.title || uploadName.replace(/\.pdf$/i, ""),
                 authors: data.paper.authors || [],
                 venue: data.paper.venue || "",
-                year: data.paper.year || 2024,
-                abstract: paperAbstract,
+                year: data.paper.year || new Date().getFullYear(),
+                abstract: data.paper.abstract || abstractSection?.body || "",
                 sections: sections
                   .filter((s: any) => s.heading?.toLowerCase() !== "abstract")
                   .map((s: any) => ({
@@ -219,12 +218,13 @@ export default function Processing() {
               });
             }
           } catch {
-            setPaperInfo(simulateExtraction(uploadName, uploadUrl));
+            // No fake data — just leave paperInfo as null (shows skeleton)
           }
         }
 
-        // After planning, try to fetch real scene plan
-        if (stageIdx >= 2 && scenePlan.length === 0) {
+        // After planning, fetch real scene plan (once)
+        if (stageIdx >= 2 && !scenePlanFetchedRef.current) {
+          scenePlanFetchedRef.current = true;
           try {
             const data = await getJobData(jobId!);
             if (data.plan?.scenes) {
@@ -240,8 +240,7 @@ export default function Processing() {
               );
             }
           } catch {
-            const info = simulateExtraction(uploadName, uploadUrl);
-            setScenePlan(generateScenePlan(info.sections));
+            // No fake scenes — just leave scenePlan empty
           }
         }
 
@@ -262,11 +261,11 @@ export default function Processing() {
               data: s.data,
             }));
             const totalDuration = scenes.reduce((sum: number, s: any) => sum + s.duration, 0);
-            const videoData = {
+            saveVideoToLibrary(jobId!, {
               title: paper.title || uploadName.replace(/\.pdf$/i, ""),
               authors: paper.authors || [],
               venue: paper.venue || "",
-              year: paper.year || 2024,
+              year: paper.year || new Date().getFullYear(),
               url: uploadUrl || undefined,
               abstract: paper.abstract || abstractSection?.body || "",
               sections: allSections
@@ -279,12 +278,14 @@ export default function Processing() {
               scenes,
               duration: totalDuration || 120,
               realJobId: jobId,
-            };
-            saveVideoToLibrary(jobId!, videoData);
+            });
           } catch {
-            // Fallback
+            // Minimal fallback — only use filename, no fake authors/sections
             saveVideoToLibrary(jobId!, {
-              ...simulateExtraction(uploadName, uploadUrl),
+              title: uploadName.replace(/\.pdf$/i, "") || "Uploaded Paper",
+              authors: [],
+              venue: "",
+              year: new Date().getFullYear(),
               scenes: scenePlan,
               duration: 120,
               realJobId: jobId,
@@ -310,10 +311,14 @@ export default function Processing() {
           );
         }
       }
-    }, 2000);
+    };
+
+    // Poll immediately, then every 2s
+    poll();
+    pollingRef.current = setInterval(poll, 2000);
 
     return () => clearInterval(pollingRef.current);
-  }, [useRealBackend, jobId, paperInfo, scenePlan.length]);
+  }, [useRealBackend, jobId]);
 
   // ── Demo / example mode (simulated timers) ──
   useEffect(() => {
