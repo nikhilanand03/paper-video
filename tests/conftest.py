@@ -31,8 +31,10 @@ def tmp_output(tmp_path, monkeypatch):
 
     monkeypatch.setattr(pipeline, "OUTPUT_ROOT", out)
     monkeypatch.setattr(pipeline, "UPLOADED_PDFS_DIR", pdfs)
+    # Patch the default JobManager instance so create_job/get_job use tmp dirs
+    monkeypatch.setattr(pipeline._default_manager, "output_root", out)
+    monkeypatch.setattr(pipeline._default_manager, "uploaded_pdfs_dir", pdfs)
     # app.py does `from pipeline import OUTPUT_ROOT, UPLOADED_PDFS_DIR`
-    # so we must also patch the names in the app module.
     monkeypatch.setattr(app_mod, "OUTPUT_ROOT", out)
     monkeypatch.setattr(app_mod, "UPLOADED_PDFS_DIR", pdfs)
 

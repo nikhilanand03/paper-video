@@ -45,12 +45,14 @@ class TestNextRunName:
     def test_first_run(self, tmp_path, monkeypatch):
         import pipeline
         monkeypatch.setattr(pipeline, "OUTPUT_ROOT", tmp_path)
+        monkeypatch.setattr(pipeline._default_manager, "output_root", tmp_path)
         name = _next_run_name("test")
         assert name == "test1"
 
     def test_increments(self, tmp_path, monkeypatch):
         import pipeline
         monkeypatch.setattr(pipeline, "OUTPUT_ROOT", tmp_path)
+        monkeypatch.setattr(pipeline._default_manager, "output_root", tmp_path)
         (tmp_path / "test1").mkdir()
         (tmp_path / "test2").mkdir()
         name = _next_run_name("test")
@@ -59,6 +61,7 @@ class TestNextRunName:
     def test_with_suffix(self, tmp_path, monkeypatch):
         import pipeline
         monkeypatch.setattr(pipeline, "OUTPUT_ROOT", tmp_path)
+        monkeypatch.setattr(pipeline._default_manager, "output_root", tmp_path)
         name = _next_run_name("demo", suffix="_fo")
         assert name == "demo1_fo"
 
@@ -75,6 +78,8 @@ class TestCreateJob:
         pdfs.mkdir()
         monkeypatch.setattr(pipeline, "OUTPUT_ROOT", out)
         monkeypatch.setattr(pipeline, "UPLOADED_PDFS_DIR", pdfs)
+        monkeypatch.setattr(pipeline._default_manager, "output_root", out)
+        monkeypatch.setattr(pipeline._default_manager, "uploaded_pdfs_dir", pdfs)
 
         job_id = create_job(mock_pdf)
 

@@ -1,0 +1,85 @@
+// Sample papers with real generated videos (streamed from Azure Blob Storage)
+export const examplePapers = [
+  {
+    id: "attention",
+    title: "Attention Is All You Need",
+    authors: ["Vaswani et al."],
+    url: "https://arxiv.org/abs/1706.03762",
+    arxivId: "1706.03762",
+    realJobId: "mars_attention2",
+    blobUrl: "https://banimvideostorage.blob.core.windows.net/videos/mars_attention2/final.mp4",
+    venue: "NeurIPS 2017",
+    year: 2017,
+    duration: 444,
+  },
+  {
+    id: "bert",
+    title: "BERT: Pre-training of Deep Bidirectional Transformers",
+    authors: ["Devlin et al."],
+    url: "https://arxiv.org/abs/1810.04805",
+    arxivId: "1810.04805",
+    realJobId: "mars_bert1",
+    blobUrl: "https://banimvideostorage.blob.core.windows.net/videos/mars_bert1/final.mp4",
+    venue: "NAACL 2019",
+    year: 2019,
+    duration: 382,
+  },
+  {
+    id: "contextfocus",
+    title: "ContextFocus: Activation Steering for Contextual Faithfulness in LLMs",
+    authors: ["Anand et al."],
+    url: "https://arxiv.org/abs/2601.04131",
+    arxivId: "2601.04131",
+    realJobId: "mars_contextfocus1",
+    blobUrl: "https://banimvideostorage.blob.core.windows.net/videos/mars_contextfocus1/final.mp4",
+    venue: "arXiv 2025",
+    year: 2025,
+    duration: 397,
+  },
+];
+
+// Minimal mock data for demo/fallback mode
+export const mockPaperData: Record<string, any> = {
+  attention: {
+    title: "Attention Is All You Need",
+    authors: ["Vaswani et al."],
+    venue: "NeurIPS 2017",
+    year: 2017,
+    url: "https://arxiv.org/abs/1706.03762",
+    abstract: "We propose the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely.",
+    sections: [
+      { id: "intro", title: "Introduction", content: "The Transformer replaces recurrent layers with multi-headed self-attention." },
+      { id: "results", title: "Results", content: "Achieves 28.4 BLEU on WMT 2014 English-to-German." },
+    ],
+    scenes: [{ id: 1, type: "title_card", label: "Title", duration: 10, narration: "Attention Is All You Need introduced the Transformer." }],
+    duration: 444,
+  },
+  bert: {
+    title: "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+    authors: ["Devlin et al."],
+    venue: "NAACL 2019",
+    year: 2019,
+    url: "https://arxiv.org/abs/1810.04805",
+    abstract: "BERT pre-trains deep bidirectional representations by jointly conditioning on both left and right context.",
+    sections: [
+      { id: "intro", title: "Introduction", content: "BERT uses masked language modeling for bidirectional pre-training." },
+      { id: "results", title: "Results", content: "State-of-the-art on 11 NLP tasks including GLUE (80.5%) and SQuAD (93.2 F1)." },
+    ],
+    scenes: [{ id: 1, type: "title_card", label: "Title", duration: 10, narration: "BERT revolutionized NLP with bidirectional pre-training." }],
+    duration: 382,
+  },
+  contextfocus: {
+    title: "ContextFocus: Activation Steering for Contextual Faithfulness in Large Language Models",
+    authors: ["Anand et al."],
+    venue: "arXiv",
+    year: 2025,
+    url: "https://arxiv.org/abs/2601.04131",
+    abstract: "A lightweight activation steering method that enhances faithfulness to retrieved context without fine-tuning.",
+    sections: [
+      { id: "intro", title: "Introduction", content: "LLMs struggle with contextual faithfulness when context conflicts with parametric memory." },
+      { id: "results", title: "Results", content: "Outperforms ContextDPO and COIECD on the ConFiQA benchmark." },
+    ],
+    scenes: [{ id: 1, type: "title_card", label: "Title", duration: 10, narration: "ContextFocus improves LLM faithfulness to retrieved context." }],
+    duration: 397,
+  },
+};
