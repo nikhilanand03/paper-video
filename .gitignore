@@ -4,6 +4,7 @@ sample-pdfs/
 __pycache__/
 *.pyc
 .env
+.env*.local
 .venv/
 venv/
 *.egg-info/
@@ -13,4 +14,8 @@ keys.json
 .vercel
 node_modules/
 .DS_Store
-.env*.local
+brand-assets/
+brand-guidelines/
+HANDOVER.md
+scene_gallery.html
+script.sh
