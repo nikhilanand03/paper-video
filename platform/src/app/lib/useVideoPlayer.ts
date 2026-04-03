@@ -148,8 +148,9 @@ export function useVideoPlayer(videoId?: string, arxivId?: string) {
   const progress = effectiveDuration > 0 ? (currentTime / effectiveDuration) * 100 : 0;
   const showExportReminder = !exportReminderDismissed && notes.length > 0 && effectiveDuration > 0 && currentTime >= effectiveDuration * 0.9;
 
-  // ── Playback simulation (demo mode) ───────────────────────────────────
+  // ── Playback simulation (demo mode only — skip when real video element exists) ──
   useEffect(() => {
+    if (hasRealVideo) return; // Real video uses onTimeUpdate, not simulation
     let interval: ReturnType<typeof setInterval>;
     if (isPlaying && video) {
       interval = setInterval(() => {
@@ -164,7 +165,7 @@ export function useVideoPlayer(videoId?: string, arxivId?: string) {
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isPlaying, playbackSpeed, video, effectiveDuration]);
+  }, [isPlaying, playbackSpeed, video, effectiveDuration, hasRealVideo]);
 
   // ── Scene tracking ────────────────────────────────────────────────────
   useEffect(() => {
