@@ -85,15 +85,14 @@ export default function Viewer() {
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent pt-12 px-4 pb-3">
                 {/* Chapter-segmented progress bar */}
                 <div className="relative mb-3 group/progress">
-                  {p.hoveredSegment !== null && (() => {
+                  {p.hoveredSegment !== null && p.hoverTime !== null && (() => {
                     const seg = p.sceneSegments[p.hoveredSegment];
-                    let leftPercent = 0;
-                    for (let i = 0; i < seg.index; i++) leftPercent += p.sceneSegments[i].widthPercent;
+                    const leftPercent = p.effectiveDuration > 0 ? (p.hoverTime / p.effectiveDuration) * 100 : 0;
                     return (
                       <div className="absolute bottom-full mb-2 whitespace-nowrap px-2.5 py-1.5 rounded text-xs shadow-lg z-50 pointer-events-none -translate-x-1/2"
-                        style={{ left: `${leftPercent + seg.widthPercent / 2}%`, backgroundColor: "rgba(0,0,0,0.85)", color: "#FFFFFF" }}>
+                        style={{ left: `${Math.min(Math.max(leftPercent, 4), 96)}%`, backgroundColor: "rgba(0,0,0,0.85)", color: "#FFFFFF" }}>
                         <span className="font-medium">{seg.scene.label}</span>
-                        <span className="ml-1.5 opacity-70">{p.formatTime(seg.startTime)}</span>
+                        <span className="ml-1.5 opacity-70">{p.formatTime(p.hoverTime)}</span>
                       </div>
                     );
                   })()}
@@ -126,8 +125,13 @@ export default function Viewer() {
                             p.setCurrentSceneIndex(seg.index);
                             if (p.videoElRef.current) p.videoElRef.current.currentTime = seekTime;
                           }}
+                          onMouseMove={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                            p.setHoverTime(seg.startTime + frac * (seg.endTime - seg.startTime));
+                          }}
                           onMouseEnter={() => p.setHoveredSegment(seg.index)}
-                          onMouseLeave={() => p.setHoveredSegment(null)}>
+                          onMouseLeave={() => { p.setHoveredSegment(null); p.setHoverTime(null); }}>
                           <div className="absolute inset-y-0 left-0 rounded-sm"
                             style={{ width: `${segFill}%`, backgroundColor: seg.index === p.currentSceneIndex ? "#2563EB" : "#93B4F5" }} />
                         </div>
@@ -216,6 +220,12 @@ export default function Viewer() {
                     <StickyNote size={16} />Add Note at {p.formatTime(p.currentTime)}
                   </Button>
 
+                  {p.notes.length > 0 && (
+                    <Button onClick={p.handleExportNotes} variant="outline" className="w-full gap-2">
+                      <Download size={16} />Export Notes (.md)
+                    </Button>
+                  )}
+
                   {p.isAddingNote && (
                     <div className="p-4 rounded-lg border-2" style={{ borderColor: "#2563EB", backgroundColor: "#FFFFFF" }}>
                       <div className="mb-2 text-sm" style={{ color: "#6B7280" }}>Note at {p.formatTime(p.noteTimestamp)} — Scene {p.currentSceneIndex + 1}: {p.currentScene?.label}</div>
@@ -261,6 +271,22 @@ export default function Viewer() {
         </div>
       </div>
 
+      {p.showExportReminder && (
+        <div className="fixed bottom-20 right-8 z-50 bg-white rounded-xl border border-[#E5E7EB] shadow-lg p-4 max-w-xs">
+          <div className="flex items-start gap-3">
+            <StickyNote size={20} style={{ color: "#2563EB" }} className="mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium mb-1" style={{ color: "#1A1A1A" }}>Export your notes</p>
+              <p className="text-xs mb-3" style={{ color: "#6B7280" }}>Use the export button to save your notes as a Markdown file before you leave.</p>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={p.handleExportNotes} className="gap-1.5" style={{ backgroundColor: "#2563EB" }}><Download size={14} />Export</Button>
+                <Button size="sm" variant="outline" onClick={() => p.setExportReminderDismissed(true)}>Dismiss</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {!p.shortcutBarDismissed && !p.showShortcutsModal && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 px-4 py-2 bg-white rounded-full border border-[#E5E7EB] shadow-lg text-sm z-40" style={{ color: "#6B7280" }}>
           <span>Press <kbd className="px-2 py-0.5 bg-[#F4F4F0] rounded text-xs font-medium">?</kbd> for keyboard shortcuts</span>
@@ -281,6 +307,7 @@ export default function Viewer() {
               <div className="flex items-center justify-between"><span>Add Note</span><kbd className="px-2 py-1 bg-[#F4F4F0] rounded text-xs">N</kbd></div>
               <div className="flex items-center justify-between"><span>Toggle Panel</span><kbd className="px-2 py-1 bg-[#F4F4F0] rounded text-xs">P</kbd></div>
               <div className="flex items-center justify-between"><span>Switch Tab</span><kbd className="px-2 py-1 bg-[#F4F4F0] rounded text-xs">T</kbd></div>
+              <div className="flex items-center justify-between"><span>Export Notes</span><kbd className="px-2 py-1 bg-[#F4F4F0] rounded text-xs">E</kbd></div>
             </div>
           </div>
         </div>

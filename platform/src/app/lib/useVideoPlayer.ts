@@ -38,6 +38,8 @@ export function useVideoPlayer(videoId?: string, arxivId?: string) {
   const [shortcutBarDismissed, setShortcutBarDismissed] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [hoveredSegment, setHoveredSegment] = useState<number | null>(null);
+  const [hoverTime, setHoverTime] = useState<number | null>(null);
+  const [exportReminderDismissed, setExportReminderDismissed] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [chapters, setChapters] = useState<{ start: number; duration: number }[] | null>(null);
   const [realScenes, setRealScenes] = useState<any[] | null>(null);
@@ -122,14 +124,19 @@ export function useVideoPlayer(videoId?: string, arxivId?: string) {
     ? chapters!.reduce((sum, ch) => sum + ch.duration, 0)
     : activeScenes.reduce((sum: number, s: any) => sum + s.duration, 0);
 
+  // Scale segment times to match actual video duration so seeking, hover, and progress work correctly
+  const timeScale = effectiveDuration > 0 && totalSceneDuration > 0
+    ? effectiveDuration / totalSceneDuration
+    : 1;
+
   const sceneSegments = activeScenes.map((scene: any, index: number) => {
     if (useRealChapters) {
       const ch = chapters![index];
-      return { scene, index, startTime: ch.start, endTime: ch.start + ch.duration, widthPercent: (ch.duration / totalSceneDuration) * 100 };
+      return { scene, index, startTime: ch.start * timeScale, endTime: (ch.start + ch.duration) * timeScale, widthPercent: (ch.duration / totalSceneDuration) * 100 };
     }
     let startTime = 0;
     for (let i = 0; i < index; i++) startTime += activeScenes[i].duration;
-    return { scene, index, startTime, endTime: startTime + scene.duration, widthPercent: (scene.duration / totalSceneDuration) * 100 };
+    return { scene, index, startTime: startTime * timeScale, endTime: (startTime + scene.duration) * timeScale, widthPercent: (scene.duration / totalSceneDuration) * 100 };
   });
 
   const currentScene = activeScenes[currentSceneIndex];
@@ -139,6 +146,7 @@ export function useVideoPlayer(videoId?: string, arxivId?: string) {
     icon: "📄",
   };
   const progress = effectiveDuration > 0 ? (currentTime / effectiveDuration) * 100 : 0;
+  const showExportReminder = !exportReminderDismissed && notes.length > 0 && effectiveDuration > 0 && currentTime >= effectiveDuration * 0.9;
 
   // ── Playback simulation (demo mode) ───────────────────────────────────
   useEffect(() => {
@@ -223,6 +231,39 @@ export function useVideoPlayer(videoId?: string, arxivId?: string) {
     alert("Link copied to clipboard!");
   };
 
+  const handleExportNotes = () => {
+    if (!video || !resolvedVideoId) return;
+    const allNotes = getNotes(resolvedVideoId);
+    if (allNotes.length === 0) return;
+
+    const frontmatter = [
+      '---',
+      `title: "${video.title}"`,
+      'authors:',
+      ...video.authors.map((a: string) => `  - "${a}"`),
+      video.venue ? `venue: "${video.venue}"` : null,
+      video.year ? `year: ${video.year}` : null,
+      video.arxivId ? `arxiv_id: "${video.arxivId}"` : null,
+      video.url ? `paper_url: "${video.url}"` : null,
+      `exported_at: "${new Date().toISOString()}"`,
+      '---',
+    ].filter(Boolean).join('\n');
+
+    const sorted = [...allNotes].sort((a: any, b: any) => a.timestamp - b.timestamp);
+    const body = sorted.map((note: any) => `### ${formatTime(note.timestamp)}\n\n${note.text}`).join('\n\n');
+    const md = `${frontmatter}\n\n# Notes: ${video.title}\n\n${body}\n`;
+
+    const blob = new Blob([md], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${video.title.replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_')}_notes.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const handleFullscreen = () => {
     const el = containerRef.current;
     if (!el) return;
@@ -270,6 +311,11 @@ export function useVideoPlayer(videoId?: string, arxivId?: string) {
           e.preventDefault();
           setActiveTab(activeTab === "paper" ? "notes" : "paper");
           break;
+        case "e":
+        case "E":
+          e.preventDefault();
+          handleExportNotes();
+          break;
         case "f":
         case "F":
           e.preventDefault();
@@ -309,6 +355,7 @@ export function useVideoPlayer(videoId?: string, arxivId?: string) {
     hasRealVideo,
     streamUrl,
     progress,
+    showExportReminder,
     // Playback
     isPlaying,
     currentTime,
@@ -323,6 +370,7 @@ export function useVideoPlayer(videoId?: string, arxivId?: string) {
     shortcutBarDismissed,
     showShortcutsModal,
     hoveredSegment,
+    hoverTime,
     isFullscreen,
     noteTimestamp,
     // Handlers
@@ -334,11 +382,13 @@ export function useVideoPlayer(videoId?: string, arxivId?: string) {
     handleDeleteNote,
     handleNoteClick,
     handleShare,
+    handleExportNotes,
     handleFullscreen,
     formatTime,
     // Setters (for JSX bindings)
     setPlaybackSpeed,
     setHoveredSegment,
+    setHoverTime,
     setCurrentTime,
     setCurrentSceneIndex,
     setIsPanelCollapsed,
@@ -350,5 +400,6 @@ export function useVideoPlayer(videoId?: string, arxivId?: string) {
     setNoteTimestamp,
     setIsPlaying,
     setRealDuration,
+    setExportReminderDismissed,
   };
 }
