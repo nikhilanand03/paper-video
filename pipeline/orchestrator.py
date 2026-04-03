@@ -4,12 +4,16 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import re
 import threading
+import traceback
 from enum import Enum
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from pipeline.extract import extract_pdf
 from pipeline.planner import plan_scenes
@@ -128,6 +132,18 @@ class JobManager:
 
 # ── Pipeline ─────────────────────────────────────────────────────────────────
 
+def _persist_status(job: dict, job_dir: Path) -> None:
+    """Write current job status to disk so it survives server restarts."""
+    data = {
+        "pdf_path": job.get("pdf_path"),
+        "status": job["status"].value if hasattr(job["status"], "value") else job["status"],
+        "error": job.get("error"),
+        "scenes_total": job.get("scenes_total", 0),
+        "scenes_done": job.get("scenes_done", 0),
+    }
+    (job_dir / "job.json").write_text(json.dumps(data, indent=2))
+
+
 class Pipeline:
     """Executes the full extraction → planning → rendering → TTS → assembly pipeline."""
 
@@ -151,8 +167,18 @@ class Pipeline:
         job = self.job_manager._jobs[job_id]
         job_dir = Path(job["job_dir"])
 
+        # Per-job log file so every run is inspectable after the fact
+        job_log_handler = logging.FileHandler(job_dir / "pipeline.log")
+        job_log_handler.setFormatter(logging.Formatter(
+            "%(asctime)s %(levelname)s [%(name)s] %(message)s", datefmt="%H:%M:%S"
+        ))
+        pipeline_root = logging.getLogger("pipeline")
+        pipeline_root.addHandler(job_log_handler)
+
         def _notify(status: Status) -> None:
             job["status"] = status
+            logger.info("[%s] %s", job_id, _STAGE_LABELS.get(status, status.value))
+            _persist_status(job, job_dir)
             if on_stage:
                 on_stage(status, _STAGE_LABELS.get(status, status.value))
 
@@ -187,6 +213,7 @@ class Pipeline:
 
             def _on_scene_done(n: int) -> None:
                 job["scenes_done"] = n
+                _persist_status(job, job_dir)
 
             render_mode = os.environ.get("RENDER_MODE", RENDER_MODE)
 
@@ -250,8 +277,13 @@ class Pipeline:
             _notify(Status.DONE)
 
         except Exception as exc:
+            logger.error("Pipeline %s failed: %s\n%s", job_id, exc, traceback.format_exc())
             job["status"] = Status.FAILED
             job["error"] = str(exc)
+            _persist_status(job, job_dir)
+        finally:
+            pipeline_root.removeHandler(job_log_handler)
+            job_log_handler.close()
 
 
 # ── Default instances + backward-compat free functions ───────────────────────

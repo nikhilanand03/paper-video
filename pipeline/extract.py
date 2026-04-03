@@ -7,6 +7,7 @@ Stops at the appendix boundary (References / Appendix) — main body only.
 from __future__ import annotations
 
 import json
+import logging
 import re
 from pathlib import Path
 
@@ -15,6 +16,8 @@ import httpx
 from reducto import Reducto
 
 from pipeline import config
+
+logger = logging.getLogger(__name__)
 
 # Section headings that mark the end of main content
 _APPENDIX_PATTERNS = re.compile(
@@ -69,6 +72,7 @@ def extract_pdf(pdf_path: str | Path, output_dir: str | Path | None = None) -> d
     client = Reducto(api_key=api_key)
 
     # Upload the PDF
+    logger.info("Uploading %s (%d bytes) to Reducto", pdf_path.name, pdf_path.stat().st_size)
     upload = client.upload(file=pdf_path)
 
     # Parse with tables as JSON and figure descriptions
@@ -86,6 +90,7 @@ def extract_pdf(pdf_path: str | Path, output_dir: str | Path | None = None) -> d
         },
     )
 
+    logger.info("Reducto parse complete, fetching results")
     # Handle URL vs inline results
     if hasattr(result.result, "url") and result.result.url:
         raw = httpx.get(result.result.url).json()
@@ -269,6 +274,13 @@ def extract_pdf(pdf_path: str | Path, output_dir: str | Path | None = None) -> d
         "sections": sections,
     }
     (out_dir / "text.json").write_text(json.dumps(text_output, indent=2))
+
+    logger.info("Extracted: title=%r, %d sections, %d figures, %d tables",
+                title[:60] if title else "(none)", len(sections), len(figures_meta), len(tables_meta))
+    if not title:
+        logger.warning("No title found in PDF")
+    if not sections:
+        logger.warning("No sections found in PDF")
 
     return {
         "title": title,

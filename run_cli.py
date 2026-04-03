@@ -12,9 +12,16 @@ Usage:
 
 import argparse
 import json
+import logging
 import sys
 import time
 from pathlib import Path
+
+logging.basicConfig(
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+    datefmt="%H:%M:%S",
+    level=logging.INFO,
+)
 
 from tqdm import tqdm
 

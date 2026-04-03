@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import threading
 import time
@@ -11,6 +12,8 @@ from pathlib import Path
 import azure.cognitiveservices.speech as speechsdk
 
 from pipeline import config
+
+logger = logging.getLogger(__name__)
 
 MAX_RETRIES = 5
 INITIAL_BACKOFF = 2  # seconds
@@ -102,9 +105,11 @@ def synthesize_scene(
         if "429" in error_msg and attempt < MAX_RETRIES - 1:
             wait = INITIAL_BACKOFF * (2 ** attempt)
             total_retry_wait += wait
+            logger.warning("TTS rate-limited (429), retry %d/%d after %.0fs", attempt + 1, MAX_RETRIES, wait)
             time.sleep(wait)
             continue
 
+        logger.error("TTS failed: %s — %s", detail.reason, error_msg)
         raise RuntimeError(f"TTS failed: {detail.reason} — {error_msg}")
 
     raise RuntimeError("TTS failed: max retries exceeded")
@@ -117,6 +122,7 @@ def synthesize_all(
 
     Returns (mp3_paths, per_scene_timing).
     """
+    logger.info("Synthesizing %d narrations (concurrency=%d)", len(narrations), MAX_TTS_CONCURRENT)
     output_dir.mkdir(parents=True, exist_ok=True)
     sc = _get_speech_config(voice)
 

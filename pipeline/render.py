@@ -8,6 +8,7 @@ Scenes are rendered in parallel using multiple browser pages.
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import time
 from dataclasses import dataclass
@@ -18,6 +19,8 @@ from playwright.async_api import async_playwright
 
 from pipeline.template_engine import prepare_scene_html
 from pipeline.template_registry import get_template
+
+logger = logging.getLogger(__name__)
 
 
 class Renderer(Protocol):
@@ -63,6 +66,8 @@ async def _render_single_scene(
     page = await browser.new_page(viewport={"width": 1920, "height": 1080})
     try:
         tmpl = get_template(scene.template)
+        mode = "animated" if tmpl.animated and tmpl.animation_duration_ms > 0 else "static"
+        logger.info("Scene %d: template=%s mode=%s", index + 1, scene.template, mode)
         html = prepare_scene_html(tmpl, scene.data)
 
         if preview_only:
@@ -76,7 +81,11 @@ async def _render_single_scene(
             result = await _render_static(page, html, index, output_dir)
 
         result.render_time = time.monotonic() - t0
+        logger.info("Scene %d done (%.1fs, %d frames)", index + 1, result.render_time, result.frame_count)
         return result
+    except Exception as e:
+        logger.error("Scene %d render failed (template=%s): %s", index + 1, scene.template, e)
+        raise
     finally:
         await page.close()
 
@@ -86,6 +95,7 @@ async def _render_scenes(
     on_scene_done: callable = None,
 ) -> list[SceneRenderResult]:
     """Render all scenes in parallel with bounded concurrency."""
+    logger.info("Rendering %d scenes (concurrency=%d)", len(scenes), MAX_CONCURRENT)
     output_dir.mkdir(parents=True, exist_ok=True)
     semaphore = asyncio.Semaphore(MAX_CONCURRENT)
     completed_count = 0

@@ -8,6 +8,7 @@ separate JSON files in a `planned_outputs/` directory for inspection.
 from __future__ import annotations
 
 import json
+import logging
 import re
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -18,6 +19,8 @@ from pydantic import BaseModel, field_validator
 
 from pipeline import config
 from pipeline.template_registry import TEMPLATE_NAMES, get_template
+
+logger = logging.getLogger(__name__)
 
 
 # ── Pydantic models ──────────────────────────────────────────────────────────
@@ -208,6 +211,7 @@ def plan_scenes(paper: dict, output_dir: str | Path | None = None) -> ScenePlan:
     )
 
     all_scenes: list[Scene] = []
+    logger.info("Planning %d parts + title card via %d parallel LLM calls", len(parts), len(parts) + 1)
 
     # Plan title + all parts in parallel
     with ThreadPoolExecutor(max_workers=len(parts) + 1) as pool:
@@ -241,6 +245,7 @@ def plan_scenes(paper: dict, output_dir: str | Path | None = None) -> ScenePlan:
     for i, scene in enumerate(all_scenes):
         scene.scene_number = i + 1
 
+    logger.info("Planned %d total scenes across %d parts", len(all_scenes), len(parts))
     plan = ScenePlan(scenes=all_scenes)
 
     # Save combined plan
@@ -382,7 +387,11 @@ def _call_llm(
         raw = raw.split("\n", 1)[1]
         raw = raw.rsplit("```", 1)[0]
 
-    data = json.loads(raw)
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as e:
+        logger.error("LLM returned invalid JSON: %s\nRaw (first 500 chars):\n%s", e, raw[:500])
+        raise ValueError(f"LLM returned invalid JSON: {e}") from e
     # Ensure duration_seconds has a default for every scene (LLM often omits it)
     for scene_dict in data.get("scenes", []):
         if "duration_seconds" not in scene_dict or scene_dict["duration_seconds"] is None:

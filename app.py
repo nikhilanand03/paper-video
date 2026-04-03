@@ -3,10 +3,17 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import shutil
 import threading
 from pathlib import Path
+
+logging.basicConfig(
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+    datefmt="%H:%M:%S",
+    level=logging.INFO,
+)
 
 from fastapi import FastAPI, UploadFile, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -66,6 +73,17 @@ async def job_status(job_id: str):
     if not job:
         job_dir = OUTPUT_ROOT / job_id
         if job_dir.is_dir():
+            job_json = job_dir / "job.json"
+            if job_json.exists():
+                data = json.loads(job_json.read_text())
+                if "status" in data:
+                    return {
+                        "status": data["status"],
+                        "error": data.get("error"),
+                        "scenes_total": data.get("scenes_total", 0),
+                        "scenes_done": data.get("scenes_done", 0),
+                    }
+            # Legacy fallback for old jobs without persisted status
             final = job_dir / "final.mp4"
             plan_file = job_dir / "planned_outputs" / "full_plan.json"
             scenes_total = 0

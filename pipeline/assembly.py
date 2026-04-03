@@ -7,6 +7,7 @@ Scene clips are assembled in parallel for speed.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
@@ -14,12 +15,15 @@ from pathlib import Path
 
 from pipeline.render import SceneRenderResult
 
+logger = logging.getLogger(__name__)
+
 MAX_ASSEMBLY_WORKERS = int(os.environ.get("ASSEMBLY_CONCURRENCY", "4"))
 
 
 def _run(cmd: list[str]) -> None:
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
+        logger.error("ffmpeg failed (exit %d): %s", result.returncode, result.stderr[:500])
         raise RuntimeError(f"ffmpeg failed: {result.stderr[:500]}")
 
 
@@ -252,6 +256,7 @@ def assemble(
 
     Scene clips are assembled in parallel using a thread pool.
     """
+    logger.info("Assembling %d scene clips", len(render_results))
     clips_dir = output_dir / "clips"
     clips_dir.mkdir(parents=True, exist_ok=True)
 
@@ -277,4 +282,5 @@ def assemble(
 
     final = output_dir / "final.mp4"
     concatenate_clips(clip_paths, final)
+    logger.info("Final video: %s (%.1f MB)", final.name, final.stat().st_size / 1e6)
     return final
