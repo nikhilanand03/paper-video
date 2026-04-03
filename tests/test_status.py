@@ -39,3 +39,66 @@ def test_status_from_disk(client, tmp_output):
     assert body["status"] == "done"
     assert body["scenes_total"] == 2
     assert body["scenes_done"] == 2
+
+
+def test_status_from_persisted_job_json(client, tmp_output):
+    """Enriched job.json with status field is used instead of guessing from final.mp4."""
+    job_id = "persisted1"
+    job_dir = tmp_output["output"] / job_id
+    job_dir.mkdir()
+
+    data = {
+        "pdf_path": "/some/path.pdf",
+        "status": "failed",
+        "error": "Reducto API timeout after 120s",
+        "scenes_total": 0,
+        "scenes_done": 0,
+    }
+    (job_dir / "job.json").write_text(json.dumps(data))
+
+    resp = client.get(f"/status/{job_id}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "failed"
+    assert body["error"] == "Reducto API timeout after 120s"
+
+
+def test_status_from_persisted_job_json_done(client, tmp_output):
+    """Enriched job.json with status=done returns correct progress."""
+    job_id = "persisted_done"
+    job_dir = tmp_output["output"] / job_id
+    job_dir.mkdir()
+
+    data = {
+        "pdf_path": "/some/path.pdf",
+        "status": "done",
+        "error": None,
+        "scenes_total": 15,
+        "scenes_done": 15,
+    }
+    (job_dir / "job.json").write_text(json.dumps(data))
+
+    resp = client.get(f"/status/{job_id}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "done"
+    assert body["scenes_total"] == 15
+    assert body["scenes_done"] == 15
+    assert body["error"] is None
+
+
+def test_status_legacy_fallback(client, tmp_output):
+    """Old job.json without status field falls through to legacy final.mp4 check."""
+    job_id = "legacy1"
+    job_dir = tmp_output["output"] / job_id
+    job_dir.mkdir()
+
+    # Old-format job.json (no status field)
+    (job_dir / "job.json").write_text(json.dumps({"pdf_path": "/old/paper.pdf"}))
+    # No final.mp4 → should be "failed"
+
+    resp = client.get(f"/status/{job_id}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "failed"
+    assert body["error"] is None

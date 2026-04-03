@@ -173,6 +173,8 @@ class Pipeline:
             "%(asctime)s %(levelname)s [%(name)s] %(message)s", datefmt="%H:%M:%S"
         ))
         pipeline_root = logging.getLogger("pipeline")
+        if pipeline_root.level > logging.INFO or pipeline_root.level == logging.NOTSET:
+            pipeline_root.setLevel(logging.INFO)
         pipeline_root.addHandler(job_log_handler)
 
         def _notify(status: Status) -> None:
