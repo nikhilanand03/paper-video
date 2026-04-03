@@ -14,8 +14,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from pipeline import create_job, get_job, run_pipeline, OUTPUT_ROOT, UPLOADED_PDFS_DIR
-from template_registry import REGISTRY
-from template_engine import prepare_scene_html_web, TEMPLATES_DIR
+from pipeline.template_registry import REGISTRY
+from pipeline.template_engine import prepare_scene_html_web, TEMPLATES_DIR
 
 app = FastAPI(title="Paper-to-Video")
 

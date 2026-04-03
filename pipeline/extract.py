@@ -14,7 +14,7 @@ import fitz  # PyMuPDF — used to render full figures from the PDF pages
 import httpx
 from reducto import Reducto
 
-import config
+from pipeline import config
 
 # Section headings that mark the end of main content
 _APPENDIX_PATTERNS = re.compile(

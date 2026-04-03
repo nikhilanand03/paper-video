@@ -16,7 +16,7 @@ from typing import Any
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
-_KEYS_PATH = Path(__file__).parent / "keys.json"
+_KEYS_PATH = Path(__file__).parent.parent / "keys.json"
 
 
 def _load_keys_json() -> dict[str, Any]:

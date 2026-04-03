@@ -10,7 +10,7 @@ from pathlib import Path
 
 import azure.cognitiveservices.speech as speechsdk
 
-import config
+from pipeline import config
 
 MAX_RETRIES = 5
 INITIAL_BACKOFF = 2  # seconds

@@ -5,9 +5,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from template_registry import TemplateMeta
+from pipeline.template_registry import TemplateMeta
 
-TEMPLATES_DIR = Path(__file__).parent / "templates"
+TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
 
 
 def _resolve_image_paths(data: dict) -> dict:

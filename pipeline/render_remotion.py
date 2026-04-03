@@ -14,14 +14,14 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
-from render import SceneRenderResult
-from template_registry import get_template
+from pipeline.render import SceneRenderResult
+from pipeline.template_registry import get_template
 
 FPS = 30
 # Minimum render duration — ensures all entrance animations complete
 MIN_DURATION_SECONDS = 7
 MAX_CONCURRENT = int(os.environ.get("RENDER_CONCURRENCY", "4"))
-REMOTION_DIR = Path(__file__).parent / "remotion-presets"
+REMOTION_DIR = Path(__file__).parent.parent / "remotion-presets"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -305,7 +305,7 @@ def render_scenes_remotion(
         (i, scenes[i]) for i in range(len(scenes)) if results[i] is None
     ]
     if fallback_scenes:
-        from render import render_scenes as render_html
+        from pipeline.render import render_scenes as render_html
 
         fallback_scene_list = [s for _, s in fallback_scenes]
         fallback_dir = output_dir / "html_fallback"

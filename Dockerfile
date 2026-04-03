@@ -25,10 +25,9 @@ RUN playwright install chromium
 COPY remotion-presets/ remotion-presets/
 RUN cd remotion-presets && npm ci --omit=dev
 
-# Copy application code (canonical names + backward-compat stubs)
-COPY app.py pipeline.py config.py template_engine.py template_registry.py run_cli.py ./
-COPY extract.py planner.py render.py render_remotion.py tts.py assembly.py ./
-COPY stage1_extract.py stage2_planner.py stage4_render.py stage4_render_remotion.py stage5_tts.py stage6_assembly.py ./
+# Copy application code
+COPY app.py run_cli.py ./
+COPY pipeline/ pipeline/
 COPY templates/ templates/
 COPY prompts/ prompts/
 

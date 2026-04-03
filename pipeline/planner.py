@@ -16,8 +16,8 @@ from typing import Any
 from openai import AzureOpenAI
 from pydantic import BaseModel, field_validator
 
-import config
-from template_registry import TEMPLATE_NAMES, get_template
+from pipeline import config
+from pipeline.template_registry import TEMPLATE_NAMES, get_template
 
 
 # ── Pydantic models ──────────────────────────────────────────────────────────
@@ -53,7 +53,7 @@ class ScenePlan(BaseModel):
 
 # ── Prompt templates ─────────────────────────────────────────────────────────
 
-SYSTEM_PROMPT = (Path(__file__).parent / "prompts" / "planner_system.txt").read_text()
+SYSTEM_PROMPT = (Path(__file__).parent.parent / "prompts" / "planner_system.txt").read_text()
 
 SECTION_USER_TEMPLATE = """\
 # Paper: {title}

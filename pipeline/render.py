@@ -16,8 +16,8 @@ from typing import Protocol
 
 from playwright.async_api import async_playwright
 
-from template_engine import prepare_scene_html
-from template_registry import get_template
+from pipeline.template_engine import prepare_scene_html
+from pipeline.template_registry import get_template
 
 
 class Renderer(Protocol):

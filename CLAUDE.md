@@ -11,19 +11,30 @@ AI platform that converts research papers (PDFs) into animated video presentatio
 ## Project Structure
 
 ```
-app.py              # FastAPI server
-pipeline.py         # Job orchestrator
-stage1_extract.py   # PDF extraction (Reducto + PyMuPDF)
-stage2_planner.py   # LLM scene planning (Azure OpenAI gpt-4o)
-stage4_render.py    # Parallel HTML→PNG (Playwright)
-stage5_tts.py       # Azure TTS with retry
-stage6_assembly.py  # Parallel ffmpeg assembly
-template_engine.py  # HTML data injection
-template_registry.py # 20 animation templates
-config.py           # keys.json → env var fallback
-platform/           # React frontend
-  src/app/pages/    # Home, Processing, Viewer, Library
-  src/app/components/
+app.py                  # FastAPI server (entry point)
+run_cli.py              # CLI runner for local video generation
+pipeline/
+  __init__.py           # Re-exports (backward compat)
+  orchestrator.py       # JobManager + Pipeline classes
+  config.py             # Pydantic BaseSettings (keys.json → env vars)
+  extract.py            # PDF extraction (Reducto + PyMuPDF)
+  planner.py            # LLM scene planning (Azure OpenAI GPT-4o)
+  render.py             # HTML/Playwright renderer + Renderer protocol
+  render_remotion.py    # Remotion React renderer (fallback to HTML)
+  tts.py                # Azure TTS with retry
+  assembly.py           # ffmpeg assembly + chapters.json
+  template_registry.py  # 20 animation template metadata
+  template_engine.py    # HTML data injection
+templates/scenes/       # HTML templates for Playwright
+prompts/                # LLM system prompts
+remotion-presets/       # React/Remotion compositions
+platform/               # React frontend
+  src/app/
+    pages/              # Home, Processing, Viewer, Library
+    lib/                # api.ts, samples.ts, storage.ts, templates.ts, useVideoPlayer.ts
+    components/         # Radix UI primitives
+tests/                  # pytest backend tests
+scripts/                # deploy.sh, shell.sh, logs.sh
 ```
 
 ## Commands
@@ -40,19 +51,13 @@ cd platform && npm run build
 cd platform && npm test
 
 # Deploy
-./scripts/deploy.sh                # build + deploy in one step
-az acr build --registry banimcr --image banim-api:latest --file Dockerfile .
-az containerapp update --name banim-api --resource-group banim-rg --image banimcr.azurecr.io/banim-api:latest
-
-# Azure shell access & logs
-./scripts/shell.sh                 # shell into running container
-./scripts/logs.sh                  # stream container logs
+./scripts/deploy.sh
 ```
 
 ## Key Patterns
 
 - **Pipeline:** Extract → Plan → Render → TTS → Assemble (parallel where possible)
-- **Config:** `config.py` reads `keys.json` locally, falls back to uppercase env vars
+- **Config:** Pydantic BaseSettings reads `keys.json`, falls back to uppercase env vars
 - **No database** — in-memory job state + filesystem + Azure Blob Storage
 - **Pre-push hook** runs pytest + vitest
 - **CORS:** localhost:5173, banim.vercel.app, holi-hack.vercel.app (or CORS_ORIGINS env)
@@ -60,4 +65,4 @@ az containerapp update --name banim-api --resource-group banim-rg --image banimc
 ## Don'ts
 
 - Don't commit `keys.json`, `.env`, or anything in `output/`
-- Don't modify templates without checking `template_registry.py` mappings
+- Don't modify templates without checking `pipeline/template_registry.py` mappings

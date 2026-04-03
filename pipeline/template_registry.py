@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-TEMPLATES_DIR = Path(__file__).parent / "templates" / "scenes"
+TEMPLATES_DIR = Path(__file__).parent.parent / "templates" / "scenes"
 
 
 @dataclass(frozen=True)

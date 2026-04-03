@@ -12,7 +12,7 @@ import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from render import SceneRenderResult
+from pipeline.render import SceneRenderResult
 
 MAX_ASSEMBLY_WORKERS = int(os.environ.get("ASSEMBLY_CONCURRENCY", "4"))
 

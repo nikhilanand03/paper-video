@@ -11,18 +11,18 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from extract import extract_pdf
-from planner import plan_scenes
-from render import render_scenes
-from tts import synthesize_all, warmup_tts
-from assembly import assemble
+from pipeline.extract import extract_pdf
+from pipeline.planner import plan_scenes
+from pipeline.render import render_scenes
+from pipeline.tts import synthesize_all, warmup_tts
+from pipeline.assembly import assemble
 
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
 RENDER_MODE = os.environ.get("RENDER_MODE", "html")
-OUTPUT_ROOT = Path(__file__).parent / "output"
-UPLOADED_PDFS_DIR = Path(__file__).parent / "uploaded-pdfs"
+OUTPUT_ROOT = Path(__file__).parent.parent / "output"
+UPLOADED_PDFS_DIR = Path(__file__).parent.parent / "uploaded-pdfs"
 
 
 class Status(str, Enum):
@@ -200,7 +200,7 @@ class Pipeline:
 
             frames_dir = job_dir / "frames"
             if render_mode == "remotion":
-                from render_remotion import render_scenes_remotion
+                from pipeline.render_remotion import render_scenes_remotion
                 render_results = render_scenes_remotion(
                     plan.scenes, frames_dir, on_scene_done=_on_scene_done,
                 )
