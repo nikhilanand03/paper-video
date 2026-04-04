@@ -10,7 +10,7 @@ export const examplePapers = [
     blobUrl: "https://banimvideostorage.blob.core.windows.net/videos/mars_attention2/final.mp4",
     venue: "NeurIPS 2017",
     year: 2017,
-    duration: 92,
+    duration: 483,
   },
   {
     id: "bert",
@@ -22,7 +22,7 @@ export const examplePapers = [
     blobUrl: "https://banimvideostorage.blob.core.windows.net/videos/mars_bert1/final.mp4",
     venue: "NAACL 2019",
     year: 2019,
-    duration: 87,
+    duration: 365,
   },
   {
     id: "contextfocus",
@@ -34,7 +34,7 @@ export const examplePapers = [
     blobUrl: "https://banimvideostorage.blob.core.windows.net/videos/mars_contextfocus1/final.mp4",
     venue: "arXiv 2025",
     year: 2025,
-    duration: 163,
+    duration: 385,
   },
 ];
 
