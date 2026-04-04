@@ -163,7 +163,7 @@ class TestPipelineLogFile:
 
         with patch("pipeline.orchestrator.extract_pdf", return_value=fake_paper), \
              patch("pipeline.orchestrator.plan_scenes", return_value=FakePlan()), \
-             patch("pipeline.orchestrator.render_scenes", return_value=[]), \
+             patch("pipeline.render_remotion.render_scenes_remotion", return_value=[]), \
              patch("pipeline.orchestrator.warmup_tts"), \
              patch("pipeline.orchestrator.synthesize_all", return_value=([], [])), \
              patch("pipeline.orchestrator.assemble", return_value=Path("/fake/final.mp4")):

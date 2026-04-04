@@ -17,14 +17,12 @@ logger = logging.getLogger(__name__)
 
 from pipeline.extract import extract_pdf
 from pipeline.planner import plan_scenes
-from pipeline.render import render_scenes
 from pipeline.tts import synthesize_all, warmup_tts
 from pipeline.assembly import assemble
 
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
-RENDER_MODE = os.environ.get("RENDER_MODE", "remotion")
 OUTPUT_ROOT = Path(__file__).parent.parent / "output"
 UPLOADED_PDFS_DIR = Path(__file__).parent.parent / "uploaded-pdfs"
 
@@ -217,26 +215,19 @@ class Pipeline:
                 job["scenes_done"] = n
                 _persist_status(job, job_dir)
 
-            render_mode = os.environ.get("RENDER_MODE", RENDER_MODE)
-
             if frames_only or till_stage == "render":
-                render_results = render_scenes(
-                    plan.scenes, job_dir / "preview", preview_only=True,
-                    on_scene_done=_on_scene_done,
+                from pipeline.render_remotion import render_scenes_remotion as _preview_render
+                render_results = _preview_render(
+                    plan.scenes, job_dir / "preview", on_scene_done=_on_scene_done,
                 )
                 _notify(Status.DONE)
                 return
 
             frames_dir = job_dir / "frames"
-            if render_mode == "remotion":
-                from pipeline.render_remotion import render_scenes_remotion
-                render_results = render_scenes_remotion(
-                    plan.scenes, frames_dir, on_scene_done=_on_scene_done,
-                )
-            else:
-                render_results = render_scenes(
-                    plan.scenes, frames_dir, on_scene_done=_on_scene_done,
-                )
+            from pipeline.render_remotion import render_scenes_remotion
+            render_results = render_scenes_remotion(
+                plan.scenes, frames_dir, on_scene_done=_on_scene_done,
+            )
 
             job["render_timing"] = [
                 {"scene": r.scene_index, "mode": r.mode, "frame_count": r.frame_count,
