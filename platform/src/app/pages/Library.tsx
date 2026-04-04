@@ -2,6 +2,7 @@ import { useNavigate } from "react-router";
 import { useState } from "react";
 import { Search, Play } from "lucide-react";
 import { getLibrary, seedSampleItems } from "../lib/data";
+import { useAuth } from "../lib/useAuth";
 
 function timeAgo(dateStr: string): string {
   const now = new Date();
@@ -18,6 +19,7 @@ function timeAgo(dateStr: string): string {
 
 export default function Library() {
   const navigate = useNavigate();
+  const { user, signInWithGoogle, signOut } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
 
   seedSampleItems();
@@ -105,21 +107,35 @@ export default function Library() {
           >
             GitHub
           </a>
-          <button
-            style={{
-              fontFamily: "'Inter', sans-serif",
-              fontSize: 14,
-              fontWeight: 500,
-              color: "#1A1A1A",
-              padding: "8px 16px",
-              border: "1px solid #D4D4D8",
-              borderRadius: 8,
-              background: "none",
-              cursor: "pointer",
-            }}
-          >
-            Sign in
-          </button>
+          {user ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 12px 4px 4px", border: "1px solid #E4E4E7", borderRadius: 20, cursor: "pointer" }} onClick={signOut}>
+              <div style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: "#4F6EF7", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "#FFFFFF", fontWeight: 600 }}>
+                  {(user.user_metadata?.full_name || user.email || "U")[0].toUpperCase()}
+                </span>
+              </div>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: "#1A1A1A", fontWeight: 500 }}>
+                {user.user_metadata?.full_name?.split(" ")[0] || user.email?.split("@")[0] || "User"}
+              </span>
+            </div>
+          ) : (
+            <button
+              onClick={signInWithGoogle}
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: 14,
+                fontWeight: 500,
+                color: "#1A1A1A",
+                padding: "8px 16px",
+                border: "1px solid #D4D4D8",
+                borderRadius: 8,
+                background: "none",
+                cursor: "pointer",
+              }}
+            >
+              Sign in
+            </button>
+          )}
         </div>
       </nav>
 

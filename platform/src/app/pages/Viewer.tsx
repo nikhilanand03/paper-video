@@ -7,10 +7,12 @@ import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
 import { getDownloadUrl } from "../lib/api";
 import { useVideoPlayer } from "../lib/useVideoPlayer";
+import { useAuth } from "../lib/useAuth";
 
 export default function Viewer() {
   const { videoId, arxivId } = useParams();
   const navigate = useNavigate();
+  const { user, signInWithGoogle, signOut } = useAuth();
   const p = useVideoPlayer(videoId, arxivId);
 
   if (!p.video) {
@@ -72,20 +74,34 @@ export default function Viewer() {
           >
             GitHub
           </a>
-          <button
-            className="transition-colors hover:bg-gray-50"
-            style={{
-              padding: "6px 16px",
-              border: "1px solid #D4D4D8",
-              borderRadius: 9999,
-              fontSize: 14,
-              fontWeight: 500,
-              color: "#1A1A1A",
-              fontFamily: "Inter, sans-serif",
-            }}
-          >
-            Sign in
-          </button>
+          {user ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 12px 4px 4px", border: "1px solid #E4E4E7", borderRadius: 20, cursor: "pointer" }} onClick={signOut}>
+              <div style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: "#4F6EF7", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "#FFFFFF", fontWeight: 600 }}>
+                  {(user.user_metadata?.full_name || user.email || "U")[0].toUpperCase()}
+                </span>
+              </div>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: "#1A1A1A", fontWeight: 500 }}>
+                {user.user_metadata?.full_name?.split(" ")[0] || user.email?.split("@")[0] || "User"}
+              </span>
+            </div>
+          ) : (
+            <button
+              onClick={signInWithGoogle}
+              className="transition-colors hover:bg-gray-50"
+              style={{
+                padding: "6px 16px",
+                border: "1px solid #D4D4D8",
+                borderRadius: 9999,
+                fontSize: 14,
+                fontWeight: 500,
+                color: "#1A1A1A",
+                fontFamily: "Inter, sans-serif",
+              }}
+            >
+              Sign in
+            </button>
+          )}
         </div>
       </nav>
 

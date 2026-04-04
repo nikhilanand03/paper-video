@@ -9,6 +9,7 @@ import {
   templateInfo,
 } from "../lib/data";
 import { getJobStatus, getJobData, statusToStageIndex } from "../lib/api";
+import { useAuth } from "../lib/useAuth";
 
 // Generates a plausible scene plan from section titles
 function generateScenePlan(sections: { id: string; title: string }[]) {
@@ -147,6 +148,7 @@ function simulateExtraction(name: string, url: string) {
 
 export default function Processing() {
   const navigate = useNavigate();
+  const { user, signInWithGoogle, signOut } = useAuth();
   const { jobId } = useParams();
   const [searchParams] = useSearchParams();
 
@@ -467,6 +469,26 @@ export default function Processing() {
           >
             GitHub
           </a>
+          {user ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 12px 4px 4px", border: "1px solid #E4E4E7", borderRadius: 20, cursor: "pointer" }} onClick={signOut}>
+              <div style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: "#4F6EF7", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "#FFFFFF", fontWeight: 600 }}>
+                  {(user.user_metadata?.full_name || user.email || "U")[0].toUpperCase()}
+                </span>
+              </div>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: "#1A1A1A", fontWeight: 500 }}>
+                {user.user_metadata?.full_name?.split(" ")[0] || user.email?.split("@")[0] || "User"}
+              </span>
+            </div>
+          ) : (
+            <button
+              onClick={signInWithGoogle}
+              className="hover:opacity-70 transition-opacity"
+              style={{ color: "#1A1A1A", fontSize: 14, fontWeight: 500, padding: "6px 16px", border: "1px solid #D4D4D8", borderRadius: 9999, background: "none", cursor: "pointer", fontFamily: "Inter, sans-serif" }}
+            >
+              Sign in
+            </button>
+          )}
         </div>
       </nav>
 
