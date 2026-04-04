@@ -4,6 +4,7 @@ import { Loader2, CheckCircle2 } from "lucide-react";
 import { examplePapers, getOrCreateVideoId, seedSampleItems } from "../lib/data";
 import { uploadPdf } from "../lib/api";
 import { useAuth } from "../lib/useAuth";
+import UserMenu from "../components/UserMenu";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -105,16 +106,7 @@ export default function Home() {
           <button onClick={() => navigate("/library")} style={{ background: "none", border: "none", cursor: "pointer", color: "#71717A", fontFamily: "'Inter', sans-serif", fontSize: 14, lineHeight: "18px", padding: 0 }}>Your videos</button>
           <a href="https://github.com/nikhilanand03/holi-hack" target="_blank" rel="noopener noreferrer" style={{ color: "#71717A", fontFamily: "'Inter', sans-serif", fontSize: 14, lineHeight: "18px", textDecoration: "none" }}>GitHub</a>
           {user ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 12px 4px 4px", border: "1px solid #E4E4E7", borderRadius: 20, cursor: "pointer" }} onClick={signOut}>
-              <div style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: "#4F6EF7", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "#FFFFFF", fontWeight: 600 }}>
-                  {(user.user_metadata?.full_name || user.email || "U")[0].toUpperCase()}
-                </span>
-              </div>
-              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: "#1A1A1A", fontWeight: 500 }}>
-                {user.user_metadata?.full_name?.split(" ")[0] || user.email?.split("@")[0] || "User"}
-              </span>
-            </div>
+            <UserMenu user={user} signOut={signOut} />
           ) : (
             <div style={{ display: "flex", alignItems: "center", border: "1px solid #D4D4D8", borderRadius: 8, paddingBlock: 8, paddingInline: 16, cursor: "pointer" }} onClick={signInWithGoogle}>
               <span style={{ color: "#1A1A1A", fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500, lineHeight: "18px" }}>Sign in</span>

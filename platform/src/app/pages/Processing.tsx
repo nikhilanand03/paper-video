@@ -10,6 +10,7 @@ import {
 } from "../lib/data";
 import { getJobStatus, getJobData, statusToStageIndex } from "../lib/api";
 import { useAuth } from "../lib/useAuth";
+import UserMenu from "../components/UserMenu";
 
 // Generates a plausible scene plan from section titles
 function generateScenePlan(sections: { id: string; title: string }[]) {
@@ -470,16 +471,7 @@ export default function Processing() {
             GitHub
           </a>
           {user ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 12px 4px 4px", border: "1px solid #E4E4E7", borderRadius: 20, cursor: "pointer" }} onClick={signOut}>
-              <div style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: "#4F6EF7", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "#FFFFFF", fontWeight: 600 }}>
-                  {(user.user_metadata?.full_name || user.email || "U")[0].toUpperCase()}
-                </span>
-              </div>
-              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: "#1A1A1A", fontWeight: 500 }}>
-                {user.user_metadata?.full_name?.split(" ")[0] || user.email?.split("@")[0] || "User"}
-              </span>
-            </div>
+            <UserMenu user={user} signOut={signOut} />
           ) : (
             <button
               onClick={signInWithGoogle}
