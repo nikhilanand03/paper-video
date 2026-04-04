@@ -53,7 +53,9 @@ export default function Viewer() {
                   ref={p.videoElRef}
                   src={p.streamUrl}
                   preload="auto"
-                  className="w-full h-full object-contain"
+                  crossOrigin="anonymous"
+                  className="absolute inset-0 w-full h-full object-contain cursor-pointer z-0"
+                  onClick={p.handlePlayPause}
                   onTimeUpdate={() => { if (p.videoElRef.current) p.setCurrentTime(p.videoElRef.current.currentTime); }}
                   onPlay={() => p.setIsPlaying(true)}
                   onPause={() => p.setIsPlaying(false)}
@@ -61,7 +63,7 @@ export default function Viewer() {
                   onLoadedMetadata={() => { if (p.videoElRef.current) p.setRealDuration(p.videoElRef.current.duration); }}
                 />
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center justify-center cursor-pointer" onClick={p.handlePlayPause}>
                   <div className="text-center p-12 max-w-4xl">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-6" style={{ backgroundColor: "rgba(37, 99, 235, 0.2)", color: "#93B4F5", fontSize: "14px" }}>
                       <span>{p.currentTemplateInfo.icon}</span>
@@ -77,65 +79,71 @@ export default function Viewer() {
                 </div>
               )}
 
-              {/* Play/Pause overlay */}
-              <button onClick={p.handlePlayPause} className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity">
-                {p.isPlaying ? <Pause size={64} color="#FFFFFF" /> : <Play size={64} color="#FFFFFF" />}
-              </button>
-
               {/* Controls */}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent pt-12 px-4 pb-3">
-                {/* Chapter-segmented progress bar */}
-                <div className="relative mb-3 group/progress">
+              <div
+                className="absolute bottom-0 left-0 right-0 z-20 px-4 pb-3 pt-16"
+                style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%)" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Seek bar - single div, simple math */}
+                <div
+                  className="relative h-8 flex items-end mb-2 cursor-pointer group/bar"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const frac = (e.clientX - rect.left) / rect.width;
+                    const t = Math.max(0, Math.min(1, frac)) * p.effectiveDuration;
+                    if (p.videoElRef.current) {
+                      p.videoElRef.current.currentTime = t;
+                      if (p.videoElRef.current.paused) p.videoElRef.current.play();
+                    }
+                    p.setCurrentTime(t);
+                  }}
+                  onMouseMove={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const frac = (e.clientX - rect.left) / rect.width;
+                    const t = Math.max(0, Math.min(1, frac)) * p.effectiveDuration;
+                    p.setHoverTime(t);
+                    const seg = p.sceneSegments.find((s: any) => t >= s.startTime && t < s.endTime) || p.sceneSegments[p.sceneSegments.length - 1];
+                    if (seg) p.setHoveredSegment(seg.index);
+                  }}
+                  onMouseLeave={() => { p.setHoveredSegment(null); p.setHoverTime(null); }}
+                >
+                  {/* Hover tooltip */}
                   {p.hoveredSegment !== null && p.hoverTime !== null && (() => {
                     const seg = p.sceneSegments[p.hoveredSegment];
-                    const leftPercent = p.effectiveDuration > 0 ? (p.hoverTime / p.effectiveDuration) * 100 : 0;
+                    const leftPct = (p.hoverTime / p.effectiveDuration) * 100;
                     return (
-                      <div className="absolute bottom-full mb-2 whitespace-nowrap px-2.5 py-1.5 rounded text-xs shadow-lg z-50 pointer-events-none -translate-x-1/2"
-                        style={{ left: `${Math.min(Math.max(leftPercent, 4), 96)}%`, backgroundColor: "rgba(0,0,0,0.85)", color: "#FFFFFF" }}>
+                      <div className="absolute bottom-full mb-2 -translate-x-1/2 whitespace-nowrap px-2.5 py-1.5 rounded text-xs shadow-lg pointer-events-none"
+                        style={{ left: `${Math.min(Math.max(leftPct, 5), 95)}%`, backgroundColor: "rgba(0,0,0,0.9)", color: "#fff" }}>
                         <span className="font-medium">{seg.scene.label}</span>
-                        <span className="ml-1.5 opacity-70">{p.formatTime(p.hoverTime)}</span>
+                        <span className="ml-1.5 opacity-60">{p.formatTime(p.hoverTime)}</span>
                       </div>
                     );
                   })()}
-
+                  {/* Current scene label (when not hovering) */}
                   {p.hoveredSegment === null && p.sceneSegments.map((seg: any) => {
                     if (seg.index !== p.currentSceneIndex) return null;
-                    let leftPercent = 0;
-                    for (let i = 0; i < seg.index; i++) leftPercent += p.sceneSegments[i].widthPercent;
+                    let left = 0;
+                    for (let i = 0; i < seg.index; i++) left += p.sceneSegments[i].widthPercent;
                     return (
-                      <div key={`label-${seg.index}`} className="absolute bottom-full mb-1.5 text-[11px] font-medium truncate pointer-events-none"
-                        style={{ left: `${leftPercent}%`, width: `${seg.widthPercent}%`, color: "#FFFFFF", textAlign: "center" }}>
+                      <div key={`lbl-${seg.index}`} className="absolute bottom-full mb-1.5 text-[11px] font-medium truncate pointer-events-none"
+                        style={{ left: `${left}%`, width: `${seg.widthPercent}%`, color: "#fff", textAlign: "center" }}>
                         {seg.scene.label}
                       </div>
                     );
                   })}
-
-                  <div className="flex items-center gap-[2px] h-[5px] group-hover/progress:h-[10px] transition-all cursor-pointer"
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                      const seekTime = frac * p.effectiveDuration;
-                      p.setCurrentTime(seekTime);
-                      if (p.videoElRef.current) p.videoElRef.current.currentTime = seekTime;
-                    }}
-                    onMouseMove={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                      const time = frac * p.effectiveDuration;
-                      p.setHoverTime(time);
-                      const seg = p.sceneSegments.find((s: any) => time >= s.startTime && time < s.endTime) || p.sceneSegments[p.sceneSegments.length - 1];
-                      if (seg) p.setHoveredSegment(seg.index);
-                    }}
-                    onMouseLeave={() => { p.setHoveredSegment(null); p.setHoverTime(null); }}>
+                  {/* Segments bar */}
+                  <div className="flex items-center gap-[2px] w-full h-[6px] group-hover/bar:h-[10px] transition-all pointer-events-none">
                     {p.sceneSegments.map((seg: any) => {
-                      let segFill = 0;
-                      if (p.currentTime >= seg.endTime) segFill = 100;
-                      else if (p.currentTime > seg.startTime) segFill = ((p.currentTime - seg.startTime) / (seg.endTime - seg.startTime)) * 100;
+                      let fill = 0;
+                      if (p.currentTime >= seg.endTime) fill = 100;
+                      else if (p.currentTime > seg.startTime) fill = ((p.currentTime - seg.startTime) / (seg.endTime - seg.startTime)) * 100;
                       return (
-                        <div key={seg.scene.id} className="relative h-full rounded-sm pointer-events-none transition-all"
-                          style={{ width: `${seg.widthPercent}%`, backgroundColor: "rgba(255,255,255,0.25)", transform: p.hoveredSegment === seg.index ? "scaleY(1.4)" : "scaleY(1)", transformOrigin: "bottom" }}>
-                          <div className="absolute inset-y-0 left-0 rounded-sm"
-                            style={{ width: `${segFill}%`, backgroundColor: seg.index === p.currentSceneIndex ? "#2563EB" : "#93B4F5" }} />
+                        <div key={seg.scene.id} className="relative h-full rounded-sm transition-transform"
+                          style={{ width: `${seg.widthPercent}%`, backgroundColor: "rgba(255,255,255,0.25)", transform: p.hoveredSegment === seg.index ? "scaleY(1.6)" : "scaleY(1)", transformOrigin: "bottom" }}>
+                          <div className="absolute inset-y-0 left-0 rounded-sm" style={{ width: `${fill}%`, backgroundColor: seg.index === p.currentSceneIndex ? "#2563EB" : "#93B4F5" }} />
                         </div>
                       );
                     })}
@@ -168,11 +176,9 @@ export default function Viewer() {
               <div className="flex items-center gap-4 mb-4 text-sm flex-wrap" style={{ color: "#6B7280" }}>
                 <span>{video.authors.slice(0, 3).join(", ")}</span>
                 <span>·</span>
-                <span>{video.venue} {video.year}</span>
+                <span>{video.venue}{video.year && !video.venue?.includes(String(video.year)) ? ` ${video.year}` : ''}</span>
                 <span>·</span>
                 <span>Generated {new Date(video.generatedAt).toLocaleDateString()}</span>
-                <span>·</span>
-                <span>{p.activeScenes.length} scenes</span>
               </div>
               <div className="flex gap-2 flex-wrap">
                 {video.url && <Button variant="outline" size="sm" onClick={() => window.open(video.url, "_blank")} className="gap-2"><ExternalLink size={14} />View Paper</Button>}

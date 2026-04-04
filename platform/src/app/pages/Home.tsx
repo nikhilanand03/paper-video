@@ -277,14 +277,14 @@ export default function Home() {
               onClick={() => handleExampleClick(paper.id)}
               className="group text-left bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden transition-all hover:shadow-lg hover:border-[#2563EB]/30 cursor-pointer"
             >
-              {/* Title card thumbnail */}
-              <div className="relative aspect-video bg-[#1A1A1A] flex items-center justify-center overflow-hidden">
-                <div className="flex flex-col items-center gap-3 px-6 opacity-90 group-hover:opacity-100 transition-opacity">
-                  <div className="w-10 h-[3px] rounded-sm" style={{ backgroundColor: "#2563EB" }} />
-                  <p className="text-white text-center text-base leading-snug" style={{ fontFamily: "'Instrument Serif', serif", fontSize: "20px" }}>
+              {/* Title card thumbnail (matches rendered video style) */}
+              <div className="relative aspect-video flex items-center justify-center overflow-hidden" style={{ backgroundColor: "#F5F0E8", backgroundImage: "radial-gradient(circle at 30% 40%, rgba(255,255,255,0.4) 0%, transparent 60%)" }}>
+                <div className="flex flex-col items-center gap-3 px-8 text-center">
+                  <div className="w-12 h-1 rounded-full" style={{ backgroundColor: "#2563EB" }} />
+                  <p className="leading-snug font-medium" style={{ fontFamily: "'Instrument Serif', serif", fontSize: "22px", color: "#1A1A1A", lineHeight: 1.25 }}>
                     {paper.title}
                   </p>
-                  <p className="text-[11px]" style={{ color: "#6B7280" }}>
+                  <p className="text-xs" style={{ color: "#6B7280" }}>
                     {paper.authors.join(", ")}{paper.venue ? ` · ${paper.venue}` : ""}
                   </p>
                 </div>
@@ -346,8 +346,8 @@ export default function Home() {
               </div>
               <div className="pt-2">
                 <p style={{ color: "#1A1A1A" }}>
-                  <strong>We read the paper</strong> — Extracting text,
-                  figures, tables, and equations
+                  <strong>We read the paper.</strong> Extracting text,
+                  figures, tables, and equations.
                 </p>
               </div>
             </div>
@@ -361,8 +361,8 @@ export default function Home() {
               </div>
               <div className="pt-2">
                 <p style={{ color: "#1A1A1A" }}>
-                  <strong>AI extracts key findings</strong> — Identifying
-                  main contributions, results, and insights
+                  <strong>AI extracts key findings.</strong> Identifying
+                  main contributions, results, and insights.
                 </p>
               </div>
             </div>
@@ -376,8 +376,8 @@ export default function Home() {
               </div>
               <div className="pt-2">
                 <p style={{ color: "#1A1A1A" }}>
-                  <strong>You get a narrated walkthrough</strong> — A clean
-                  video explaining the paper in minutes
+                  <strong>You get a narrated walkthrough.</strong> A clean
+                  video explaining the paper in minutes.
                 </p>
               </div>
             </div>

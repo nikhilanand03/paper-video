@@ -80,7 +80,7 @@ export function deleteNote(videoId: string, noteId: string) {
 
 export function seedSampleItems() {
   const library = getLibrary();
-  const SEED_KEY = "samples_seeded_v10";
+  const SEED_KEY = "samples_seeded_v11";
   if (localStorage.getItem(SEED_KEY)) return;
 
   for (const paper of examplePapers) {

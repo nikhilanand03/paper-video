@@ -165,16 +165,16 @@ export default function Library() {
                 {/* Thumbnail */}
                 <div
                   className="aspect-video flex flex-col items-center justify-center cursor-pointer relative overflow-hidden"
-                  style={{ backgroundColor: '#1A1A1A' }}
+                  style={{ backgroundColor: '#F5F0E8', backgroundImage: "radial-gradient(circle at 30% 40%, rgba(255,255,255,0.4) 0%, transparent 60%)" }}
                   onClick={() => navigate(video.arxivId ? `/abs/${video.arxivId}` : `/v/${video.id}`)}
                 >
                   <div className="flex flex-col items-center gap-2 px-6 text-center">
-                    <div className="w-8 h-[3px] rounded-sm" style={{ backgroundColor: "#2563EB" }} />
+                    <div className="w-10 h-1 rounded-full" style={{ backgroundColor: "#2563EB" }} />
                     <div
                       style={{
                         fontFamily: "'Instrument Serif', serif",
                         fontSize: '18px',
-                        color: '#FFFFFF',
+                        color: '#1A1A1A',
                         lineHeight: 1.3,
                       }}
                     >
@@ -187,12 +187,12 @@ export default function Library() {
                   <div className="absolute inset-0 flex items-center justify-center">
                     <Play
                       size={48}
-                      className="text-white opacity-0 group-hover:opacity-80 transition-opacity"
-                      fill="white"
+                      className="text-[#1A1A1A] opacity-0 group-hover:opacity-60 transition-opacity"
+                      fill="#1A1A1A"
                     />
                   </div>
                   {video.duration && (
-                    <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/60 text-white text-[10px]" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+                    <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/50 text-white text-[10px]" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
                       {Math.floor(video.duration / 60)}:{(Math.floor(video.duration % 60)).toString().padStart(2, '0')}
                     </div>
                   )}
