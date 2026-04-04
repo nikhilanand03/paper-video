@@ -52,6 +52,7 @@ export default function Viewer() {
                 <video
                   ref={p.videoElRef}
                   src={p.streamUrl}
+                  preload="auto"
                   className="w-full h-full object-contain"
                   onTimeUpdate={() => { if (p.videoElRef.current) p.setCurrentTime(p.videoElRef.current.currentTime); }}
                   onPlay={() => p.setIsPlaying(true)}

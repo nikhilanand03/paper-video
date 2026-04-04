@@ -277,21 +277,17 @@ export default function Home() {
               onClick={() => handleExampleClick(paper.id)}
               className="group text-left bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden transition-all hover:shadow-lg hover:border-[#2563EB]/30 cursor-pointer"
             >
-              {/* Video thumbnail */}
-              <div className="relative aspect-video bg-[#0F172A] flex items-center justify-center overflow-hidden">
-                {(paper.blobUrl || paper.realJobId) ? (
-                  <video
-                    src={paper.blobUrl || getStreamUrl(paper.realJobId)}
-                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                    muted
-                    preload="metadata"
-                    onLoadedMetadata={(e) => {
-                      (e.target as HTMLVideoElement).currentTime = 5;
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-[#1E293B] to-[#0F172A]" />
-                )}
+              {/* Title card thumbnail */}
+              <div className="relative aspect-video bg-[#1A1A1A] flex items-center justify-center overflow-hidden">
+                <div className="flex flex-col items-center gap-3 px-6 opacity-90 group-hover:opacity-100 transition-opacity">
+                  <div className="w-10 h-[3px] rounded-sm" style={{ backgroundColor: "#2563EB" }} />
+                  <p className="text-white text-center text-base leading-snug" style={{ fontFamily: "'Instrument Serif', serif", fontSize: "20px" }}>
+                    {paper.title}
+                  </p>
+                  <p className="text-[11px]" style={{ color: "#6B7280" }}>
+                    {paper.authors.join(", ")}{paper.venue ? ` · ${paper.venue}` : ""}
+                  </p>
+                </div>
                 {/* Play overlay */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity scale-90 group-hover:scale-100">

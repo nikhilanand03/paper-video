@@ -19,9 +19,9 @@ describe('Home page', () => {
 
   it('renders example paper buttons', () => {
     renderHome();
-    expect(screen.getByText(/Attention Is All You Need/i)).toBeInTheDocument();
-    expect(screen.getByText(/BERT/i)).toBeInTheDocument();
-    expect(screen.getByText(/ContextFocus/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Attention Is All You Need/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/BERT/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ContextFocus/i).length).toBeGreaterThan(0);
   });
 
   it('has the Generate button disabled when no file or URL is provided', () => {

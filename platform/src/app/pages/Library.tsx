@@ -163,27 +163,39 @@ export default function Library() {
                 className="bg-white rounded-2xl overflow-hidden border border-[#E5E7EB] hover:border-[#2563EB] transition-all hover:shadow-lg group"
               >
                 {/* Thumbnail */}
-                <div 
-                  className="aspect-video flex items-center justify-center cursor-pointer"
-                  style={{ backgroundColor: '#F4F4F0' }}
+                <div
+                  className="aspect-video flex flex-col items-center justify-center cursor-pointer relative overflow-hidden"
+                  style={{ backgroundColor: '#1A1A1A' }}
                   onClick={() => navigate(video.arxivId ? `/abs/${video.arxivId}` : `/v/${video.id}`)}
                 >
-                  <div className="text-center p-6">
-                    <Play
-                      size={48}
-                      style={{ color: '#2563EB' }}
-                      className="mx-auto mb-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    />
+                  <div className="flex flex-col items-center gap-2 px-6 text-center">
+                    <div className="w-8 h-[3px] rounded-sm" style={{ backgroundColor: "#2563EB" }} />
                     <div
                       style={{
                         fontFamily: "'Instrument Serif', serif",
                         fontSize: '18px',
-                        color: '#1A1A1A'
+                        color: '#FFFFFF',
+                        lineHeight: 1.3,
                       }}
                     >
-                      {video.title.slice(0, 50)}{video.title.length > 50 ? '...' : ''}
+                      {video.title.length > 60 ? video.title.slice(0, 60) + '...' : video.title}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6B7280' }}>
+                      {video.authors?.slice(0, 2).join(", ")}{video.venue ? ` · ${video.venue}` : ""}
                     </div>
                   </div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Play
+                      size={48}
+                      className="text-white opacity-0 group-hover:opacity-80 transition-opacity"
+                      fill="white"
+                    />
+                  </div>
+                  {video.duration && (
+                    <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/60 text-white text-[10px]" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+                      {Math.floor(video.duration / 60)}:{(Math.floor(video.duration % 60)).toString().padStart(2, '0')}
+                    </div>
+                  )}
                 </div>
 
                 {/* Info */}
