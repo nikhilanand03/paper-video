@@ -24,7 +24,7 @@ from pipeline.assembly import assemble
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
-RENDER_MODE = os.environ.get("RENDER_MODE", "html")
+RENDER_MODE = os.environ.get("RENDER_MODE", "remotion")
 OUTPUT_ROOT = Path(__file__).parent.parent / "output"
 UPLOADED_PDFS_DIR = Path(__file__).parent.parent / "uploaded-pdfs"
 

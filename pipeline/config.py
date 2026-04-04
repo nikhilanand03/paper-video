@@ -44,7 +44,7 @@ class Config(BaseSettings):
     azure_tts_region: str = "eastus"
 
     # Rendering
-    render_mode: str = "html"
+    render_mode: str = "remotion"
     render_concurrency: int = 4
     assembly_concurrency: int = 4
 
