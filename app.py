@@ -22,7 +22,7 @@ from fastapi.staticfiles import StaticFiles
 
 from pipeline import create_job, get_job, run_pipeline, OUTPUT_ROOT, UPLOADED_PDFS_DIR
 from pipeline.template_registry import REGISTRY
-from pipeline.template_engine import prepare_scene_html_web, TEMPLATES_DIR
+from pipeline.template_registry import TEMPLATES_DIR
 
 app = FastAPI(title="Paper-to-Video")
 
@@ -238,24 +238,6 @@ async def list_templates():
         (charts if name in chart_names else layout).append(name)
     return {"layout": layout, "charts": charts}
 
-
-@app.post("/api/template-preview/{name}")
-async def template_preview(name: str, request: Request):
-    """Render a template with the provided JSON data for browser preview."""
-    if name not in REGISTRY:
-        raise HTTPException(404, f"Unknown template: {name}")
-    data = await request.json()
-    html = prepare_scene_html_web(REGISTRY[name], data)
-    return {"html": html}
-
-
-@app.get("/api/theme.css")
-async def serve_theme_css():
-    """Serve theme.css for iframe previews."""
-    css_path = TEMPLATES_DIR / "theme.css"
-    if not css_path.exists():
-        raise HTTPException(404, "theme.css not found")
-    return FileResponse(css_path, media_type="text/css")
 
 
 # Serve frontend

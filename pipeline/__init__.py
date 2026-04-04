@@ -8,7 +8,6 @@ from pipeline.orchestrator import (
     JobManager,
     Pipeline,
     Status,
-    RENDER_MODE,
     OUTPUT_ROOT,
     UPLOADED_PDFS_DIR,
     PIPELINE_STAGES_FULL,
@@ -27,7 +26,7 @@ from pipeline.orchestrator import (
 
 __all__ = [
     "JobManager", "Pipeline", "Status",
-    "RENDER_MODE", "OUTPUT_ROOT", "UPLOADED_PDFS_DIR",
+    "OUTPUT_ROOT", "UPLOADED_PDFS_DIR",
     "PIPELINE_STAGES_FULL", "PIPELINE_STAGES_FRAMES_ONLY",
     "create_job", "get_job", "run_pipeline",
     "_default_manager", "_default_pipeline", "_jobs",

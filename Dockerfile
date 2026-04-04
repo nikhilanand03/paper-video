@@ -28,14 +28,13 @@ RUN cd remotion-presets && npm ci --omit=dev
 # Copy application code
 COPY app.py run_cli.py ./
 COPY pipeline/ pipeline/
-COPY templates/ templates/
 COPY prompts/ prompts/
 
 # Create runtime directories
 RUN mkdir -p output uploaded-pdfs static
 
 # Default to Remotion rendering; reuse Playwright's Chromium
-ENV RENDER_MODE=html
+ENV RENDER_MODE=remotion
 ENV RENDER_CONCURRENCY=2
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
