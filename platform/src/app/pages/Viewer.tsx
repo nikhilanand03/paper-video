@@ -108,7 +108,7 @@ export default function Viewer() {
                   onTimeUpdate={() => { if (p.videoElRef.current) p.setCurrentTime(p.videoElRef.current.currentTime); }}
                   onSeeking={() => console.log("[VIDEO] seeking to:", p.videoElRef.current?.currentTime)}
                   onSeeked={() => console.log("[VIDEO] seeked, now at:", p.videoElRef.current?.currentTime)}
-                  onError={(e) => { console.warn("[VIDEO] stream error, falling back to blobUrl:", (e.target as HTMLVideoElement).error); p.setStreamFailed(true); }}
+                  onError={(e) => console.warn("[VIDEO] error:", (e.target as HTMLVideoElement).error)}
                   onPlay={() => p.setIsPlaying(true)}
                   onPause={() => p.setIsPlaying(false)}
                   onEnded={() => p.setIsPlaying(false)}
