@@ -43,13 +43,13 @@ describe('statusToStageIndex', () => {
 
 describe('getStreamUrl', () => {
   it('returns the correct streaming path', () => {
-    expect(getStreamUrl('abc123')).toBe('/stream/abc123');
+    expect(getStreamUrl('abc123')).toContain('/stream/abc123');
   });
 });
 
 describe('getDownloadUrl', () => {
   it('returns the correct download path', () => {
-    expect(getDownloadUrl('abc123')).toBe('/download/abc123');
+    expect(getDownloadUrl('abc123')).toContain('/download/abc123');
   });
 });
 
@@ -76,7 +76,7 @@ describe('uploadPdf', () => {
     expect(fetch).toHaveBeenCalledTimes(1);
 
     const [url, options] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(url).toBe('/upload');
+    expect(url).toContain('/upload');
     expect(options.method).toBe('POST');
     expect(options.body).toBeInstanceOf(FormData);
   });

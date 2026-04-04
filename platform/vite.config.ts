@@ -16,13 +16,13 @@ export default defineConfig({
   assetsInclude: ['**/*.svg', '**/*.csv'],
   server: {
     proxy: {
-      '/api': process.env.VITE_API_URL || 'http://localhost:8000',
-      '/upload': process.env.VITE_API_URL || 'http://localhost:8000',
-      '/status': process.env.VITE_API_URL || 'http://localhost:8000',
-      '/job': process.env.VITE_API_URL || 'http://localhost:8000',
-      '/stream': process.env.VITE_API_URL || 'http://localhost:8000',
-      '/download': process.env.VITE_API_URL || 'http://localhost:8000',
-      '/chapters': process.env.VITE_API_URL || 'http://localhost:8000',
+      '/api': process.env.VITE_API_URL || 'http://20.40.232.1:8000',
+      '/upload': process.env.VITE_API_URL || 'http://20.40.232.1:8000',
+      '/status': process.env.VITE_API_URL || 'http://20.40.232.1:8000',
+      '/job': process.env.VITE_API_URL || 'http://20.40.232.1:8000',
+      '/stream': process.env.VITE_API_URL || 'http://20.40.232.1:8000',
+      '/download': process.env.VITE_API_URL || 'http://20.40.232.1:8000',
+      '/chapters': process.env.VITE_API_URL || 'http://20.40.232.1:8000',
     },
   },
 })
