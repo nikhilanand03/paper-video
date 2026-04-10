@@ -45,11 +45,11 @@ export interface JobData {
 }
 
 /** Upload a PDF and start the pipeline. Returns the job ID. */
-export async function uploadPdf(file: File): Promise<string> {
+export async function uploadPdf(file: File, mode: "brief" | "detailed" = "brief"): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch(`${API_BASE}/upload`, {
+  const res = await fetch(`${API_BASE}/upload?mode=${mode}`, {
     method: "POST",
     body: formData,
   });

@@ -462,7 +462,7 @@ export const HeatmapScene: React.FC<Props> = ({
 
                 // Diagonal sweep stagger
                 const diagIndex = r + c;
-                const cellDelay = 1.2 * fps + diagIndex * 3;
+                const cellDelay = 0.7 * fps + diagIndex * 2;
 
                 const cellAlpha = interpolate(
                   frame,

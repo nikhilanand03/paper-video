@@ -415,10 +415,10 @@ export const HorizontalBarChartScene: React.FC<Props> = ({
               const isHighlight = item.label === highlightLabel;
               const barColor = isHighlight ? "#059669" : "#D1D5DB";
               const seed = i * 100;
-              const STAGGER = 6;
+              const STAGGER = 4;
 
               // Label fade in (staggered top to bottom)
-              const labelDelay = 0.8 * fps + i * 4;
+              const labelDelay = 0.5 * fps + i * 3;
               const labelAlpha = interpolate(
                 frame,
                 [labelDelay, labelDelay + 10],
@@ -430,7 +430,7 @@ export const HorizontalBarChartScene: React.FC<Props> = ({
               );
 
               // Bar grow (spring, staggered)
-              const barDelay = 1.2 * fps + i * STAGGER;
+              const barDelay = 0.7 * fps + i * STAGGER;
               const barProgress = spring({
                 frame,
                 fps,
@@ -517,7 +517,7 @@ export const HorizontalBarChartScene: React.FC<Props> = ({
             {highlightIndex >= 0 &&
               (() => {
                 const hlDelay =
-                  1.2 * fps + highlightIndex * 6 + 15;
+                  0.7 * fps + highlightIndex * 4 + 9;
                 const hlAlpha = interpolate(
                   frame,
                   [hlDelay, hlDelay + 12],

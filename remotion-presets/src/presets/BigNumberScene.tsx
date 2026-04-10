@@ -718,8 +718,8 @@ export const BigNumberScene: React.FC<BigNumberProps> = ({
   });
 
   // === ACCENT LINE (top) ===
-  const accentDelay = Math.round(0.8 * fps);
-  const accentDuration = Math.round(0.8 * fps);
+  const accentDelay = Math.round(0.5 * fps);
+  const accentDuration = Math.round(0.5 * fps);
   const accentProgress = interpolate(
     frame,
     [accentDelay, accentDelay + accentDuration],
@@ -732,8 +732,8 @@ export const BigNumberScene: React.FC<BigNumberProps> = ({
   );
 
   // === DIVIDER under number ===
-  const dividerDelay = Math.round(3.6 * fps);
-  const dividerDuration = Math.round(0.8 * fps);
+  const dividerDelay = Math.round(2.1 * fps);
+  const dividerDuration = Math.round(0.5 * fps);
   const dividerProgress = interpolate(
     frame,
     [dividerDelay, dividerDelay + dividerDuration],
@@ -742,8 +742,8 @@ export const BigNumberScene: React.FC<BigNumberProps> = ({
   );
 
   // === LABEL ===
-  const labelDelay = Math.round(1.0 * fps);
-  const labelDuration = Math.round(0.5 * fps);
+  const labelDelay = Math.round(0.6 * fps);
+  const labelDuration = Math.round(0.35 * fps);
   const labelProgress = interpolate(
     frame,
     [labelDelay, labelDelay + labelDuration],
@@ -758,8 +758,8 @@ export const BigNumberScene: React.FC<BigNumberProps> = ({
   const labelBlur = interpolate(labelProgress, [0, 1], [4, 0]);
 
   // === NUMBER DRAWING ===
-  const NUM_START = Math.round(1.4 * fps);
-  const NUM_END = Math.round(3.4 * fps);
+  const NUM_START = Math.round(0.85 * fps);
+  const NUM_END = Math.round(2.0 * fps);
   const numProgress = interpolate(frame, [NUM_START, NUM_END], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -780,8 +780,8 @@ export const BigNumberScene: React.FC<BigNumberProps> = ({
   const numberY = interpolate(numberLift, [0, 1], [16, 0]);
 
   // === UNIT ===
-  const UNIT_START = Math.round(3.4 * fps);
-  const UNIT_END = Math.round(3.9 * fps);
+  const UNIT_START = Math.round(2.0 * fps);
+  const UNIT_END = Math.round(2.3 * fps);
   const unitAlpha = interpolate(frame, [UNIT_START, UNIT_END], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -798,8 +798,8 @@ export const BigNumberScene: React.FC<BigNumberProps> = ({
   });
 
   // === DESCRIPTION ===
-  const DESC_START = Math.round(4.0 * fps);
-  const DESC_END = Math.round(4.8 * fps);
+  const DESC_START = Math.round(2.4 * fps);
+  const DESC_END = Math.round(2.9 * fps);
   const descAlpha = interpolate(frame, [DESC_START, DESC_END], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",

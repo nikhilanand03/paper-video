@@ -154,6 +154,7 @@ class Pipeline:
         on_stage: callable = None,
         frames_only: bool = False,
         till_stage: str | None = None,
+        plan_mode: str = "brief",
     ) -> None:
         """Execute the pipeline for a job.
 
@@ -161,6 +162,7 @@ class Pipeline:
             on_stage: Optional callback(status, label) called when each stage starts.
             frames_only: If True, stop after rendering (skip TTS and assembly).
             till_stage: Stop after this stage ("extract", "plan", "render", "tts").
+            plan_mode: "brief" (single LLM call) or "detailed" (per-section parallel calls).
         """
         job = self.job_manager._jobs[job_id]
         job_dir = Path(job["job_dir"])
@@ -195,7 +197,7 @@ class Pipeline:
 
             # Plan
             _notify(Status.PLANNING)
-            plan = plan_scenes(paper, output_dir=job_dir)
+            plan = plan_scenes(paper, output_dir=job_dir, mode=plan_mode)
             job["scenes_total"] = len(plan.scenes)
             plan_dict = plan.model_dump()
             (job_dir / "plan.json").write_text(json.dumps(plan_dict, indent=2, default=str))
@@ -301,8 +303,9 @@ def run_pipeline(
     on_stage: callable = None,
     frames_only: bool = False,
     till_stage: str | None = None,
+    plan_mode: str = "brief",
 ) -> None:
-    return _default_pipeline.run(job_id, on_stage, frames_only, till_stage)
+    return _default_pipeline.run(job_id, on_stage, frames_only, till_stage, plan_mode=plan_mode)
 
 
 # Keep _sanitize and _next_run_name accessible for tests

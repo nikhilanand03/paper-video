@@ -614,8 +614,8 @@ export const GroupedBarChartScene: React.FC<Props> = ({
                 gi * groupGap +
                 (groupGap - groupBarAreaW) / 2;
 
-              const GROUP_STAGGER = 10;
-              const groupDelay = 1 * fps + gi * GROUP_STAGGER;
+              const GROUP_STAGGER = 6;
+              const groupDelay = Math.round(0.6 * fps) + gi * GROUP_STAGGER;
 
               return (
                 <g key={`group-${gi}`}>

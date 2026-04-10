@@ -72,10 +72,14 @@ def extract_pdf(pdf_path: str | Path, output_dir: str | Path | None = None) -> d
     client = Reducto(api_key=api_key)
 
     # Upload the PDF
+    import time as _time
+    _t_upload = _time.monotonic()
     logger.info("Uploading %s (%d bytes) to Reducto", pdf_path.name, pdf_path.stat().st_size)
     upload = client.upload(file=pdf_path)
+    logger.info("  ↳ Upload took %.1fs", _time.monotonic() - _t_upload)
 
     # Parse with tables as JSON and figure descriptions
+    _t_parse = _time.monotonic()
     result = client.parse.run(
         input=upload,
         enhance={
@@ -90,7 +94,8 @@ def extract_pdf(pdf_path: str | Path, output_dir: str | Path | None = None) -> d
         },
     )
 
-    logger.info("Reducto parse complete, fetching results")
+    logger.info("  ↳ Reducto parse took %.1fs", _time.monotonic() - _t_parse)
+    logger.info("Fetching results")
     # Handle URL vs inline results
     if hasattr(result.result, "url") and result.result.url:
         raw = httpx.get(result.result.url).json()

@@ -257,8 +257,8 @@ export const SectionHeaderScene: React.FC<SectionHeaderProps> = ({
   });
 
   // === DECORATIVE BACKGROUND NUMBER (very large, very faint) ===
-  const numberDelay = Math.round(0.8 * fps);
-  const numberDuration = Math.round(1.2 * fps);
+  const numberDelay = Math.round(0.5 * fps);
+  const numberDuration = Math.round(0.8 * fps);
   const numberOpacity = interpolate(
     frame,
     [numberDelay, numberDelay + numberDuration],
@@ -281,8 +281,8 @@ export const SectionHeaderScene: React.FC<SectionHeaderProps> = ({
   );
 
   // === "PART X" LABEL ===
-  const partLabelDelay = Math.round(1.2 * fps);
-  const partLabelDuration = Math.round(0.5 * fps);
+  const partLabelDelay = Math.round(0.7 * fps);
+  const partLabelDuration = Math.round(0.35 * fps);
   const partLabelOpacity = interpolate(
     frame,
     [partLabelDelay, partLabelDelay + partLabelDuration],
@@ -305,8 +305,8 @@ export const SectionHeaderScene: React.FC<SectionHeaderProps> = ({
   );
 
   // === ROUGH.JS UNDERLINE UNDER "PART X" (draws itself) ===
-  const partUnderlineDelay = Math.round(1.4 * fps);
-  const partUnderlineDuration = Math.round(0.6 * fps);
+  const partUnderlineDelay = Math.round(0.85 * fps);
+  const partUnderlineDuration = Math.round(0.4 * fps);
   const partUnderlineProgress = interpolate(
     frame,
     [partUnderlineDelay, partUnderlineDelay + partUnderlineDuration],
@@ -319,8 +319,8 @@ export const SectionHeaderScene: React.FC<SectionHeaderProps> = ({
   );
 
   // === ROUGH.JS DIVIDER between "PART X" area and heading ===
-  const dividerDelay = Math.round(1.6 * fps);
-  const dividerDuration = Math.round(0.8 * fps);
+  const dividerDelay = Math.round(1.0 * fps);
+  const dividerDuration = Math.round(0.5 * fps);
   const dividerProgress = interpolate(
     frame,
     [dividerDelay, dividerDelay + dividerDuration],
@@ -350,14 +350,14 @@ export const SectionHeaderScene: React.FC<SectionHeaderProps> = ({
   }, []);
 
   const headingLines = splitIntoLines(heading);
-  const headingStartDelay = Math.round(2.0 * fps);
-  const lineStagger = Math.round(0.2 * fps);
+  const headingStartDelay = Math.round(1.2 * fps);
+  const lineStagger = Math.round(0.12 * fps);
 
   // === TAGLINE ===
   const headingEndFrame =
     headingStartDelay + headingLines.length * lineStagger + Math.round(0.6 * fps);
-  const taglineDelay = headingEndFrame + Math.round(0.2 * fps);
-  const taglineDuration = Math.round(0.5 * fps);
+  const taglineDelay = headingEndFrame + Math.round(0.12 * fps);
+  const taglineDuration = Math.round(0.35 * fps);
   const taglineOpacity = interpolate(
     frame,
     [taglineDelay, taglineDelay + taglineDuration],

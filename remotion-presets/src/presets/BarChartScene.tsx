@@ -248,8 +248,8 @@ const Bar: React.FC<{
   frame,
   fps,
 }) => {
-  const STAGGER = 8;
-  const delay = 15 + index * STAGGER;
+  const STAGGER = 5;
+  const delay = 9 + index * STAGGER;
 
   const progress = spring({
     frame,

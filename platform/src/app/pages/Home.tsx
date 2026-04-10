@@ -4,17 +4,19 @@ import { Loader2, CheckCircle2 } from "lucide-react";
 import { examplePapers, getOrCreateVideoId, seedSampleItems } from "../lib/data";
 import { uploadPdf } from "../lib/api";
 import { useAuth } from "../lib/useAuth";
+import { useJobs } from "../lib/JobContext";
 import UserMenu from "../components/UserMenu";
 
 export default function Home() {
   const navigate = useNavigate();
   const { user, signInWithGoogle, signOut } = useAuth();
+  const { addJob } = useJobs();
   seedSampleItems();
-  const [url, setUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<"brief" | "detailed">("brief");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -33,7 +35,6 @@ export default function Home() {
     const droppedFile = e.dataTransfer.files[0];
     if (droppedFile && droppedFile.type === "application/pdf") {
       setFile(droppedFile);
-      setUrl("");
       setError(null);
     }
   };
@@ -42,17 +43,8 @@ export default function Home() {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
-      setUrl("");
       setError(null);
     }
-  };
-
-  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUrl(e.target.value);
-    if (e.target.value) {
-      setFile(null);
-    }
-    setError(null);
   };
 
   const handleGenerate = async () => {
@@ -61,7 +53,8 @@ export default function Home() {
     if (file) {
       setIsUploading(true);
       try {
-        const jobId = await uploadPdf(file);
+        const jobId = await uploadPdf(file, mode);
+        addJob(jobId, file.name.replace(/\.pdf$/i, ""));
         navigate(`/video/${jobId}?source=upload&name=${encodeURIComponent(file.name)}`);
       } catch (err: any) {
         console.warn("Backend not available, using demo mode:", err.message);
@@ -72,11 +65,6 @@ export default function Home() {
       } finally {
         setIsUploading(false);
       }
-    } else if (url) {
-      const jobId = getOrCreateVideoId("url_" + Date.now());
-      navigate(
-        `/video/${jobId}?source=url&url=${encodeURIComponent(url)}&demo=1`
-      );
     }
   };
 
@@ -90,7 +78,7 @@ export default function Home() {
     }
   };
 
-  const canGenerate = (file || url.length > 0) && !isUploading;
+  const canGenerate = !!file && !isUploading;
 
   return (
     <div style={{ backgroundColor: "#FAFAF8", minHeight: "100vh", display: "flex", flexDirection: "column", fontFamily: "'Inter', sans-serif" }}>
@@ -119,7 +107,7 @@ export default function Home() {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, paddingLeft: 80, paddingRight: 80, paddingTop: 48 }}>
         <span style={{ color: "#7C3AED", fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500, letterSpacing: "1.5px", lineHeight: "16px", textTransform: "uppercase" as const }}>Open Source</span>
         <span style={{ color: "#1A1A1A", fontFamily: "'Source Serif 4', serif", fontSize: 56, lineHeight: 1.15, textAlign: "center" }}>Turn research into video</span>
-        <span style={{ color: "#6B7280", fontFamily: "'Inter', sans-serif", fontSize: 18, lineHeight: 1.6, maxWidth: 520, textAlign: "center" }}>Upload a PDF or paste an arXiv URL. Get a narrated, animated video in minutes — no editing required.</span>
+        <span style={{ color: "#6B7280", fontFamily: "'Inter', sans-serif", fontSize: 18, lineHeight: 1.6, maxWidth: 520, textAlign: "center" }}>Upload a PDF and get a narrated, animated video in minutes — no editing required.</span>
       </div>
 
       {/* PDF → Video visual */}
@@ -214,39 +202,51 @@ export default function Home() {
             </>
           )}
 
-          {/* Divider */}
-          <div style={{ display: "flex", alignItems: "center", gap: 16, width: "100%" }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ backgroundColor: "#E5E7EB", flex: 1, height: 1 }} />
-            <span style={{ color: "#9CA3AF", fontFamily: "'Inter', sans-serif", fontSize: 12, lineHeight: "16px" }}>or</span>
-            <div style={{ backgroundColor: "#E5E7EB", flex: 1, height: 1 }} />
-          </div>
-
-          {/* URL input + Generate */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%" }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: "flex", alignItems: "center", flex: 1, backgroundColor: "#FAFAF8", border: "1px solid #E5E7EB", borderRadius: 8, height: 44, paddingInline: 14 }}>
-              <input
-                type="text"
-                placeholder="https://arxiv.org/abs/..."
-                value={url}
-                onChange={handleUrlChange}
-                style={{ width: "100%", border: "none", outline: "none", backgroundColor: "transparent", fontFamily: "'Inter', sans-serif", fontSize: 14, color: "#1A1A1A", lineHeight: "18px" }}
-              />
-            </div>
-            <button
-              onClick={handleGenerate}
-              disabled={!canGenerate}
-              style={{ display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: canGenerate ? "#2563EB" : "#93C5FD", borderRadius: 8, border: "none", height: 44, paddingInline: 20, cursor: canGenerate ? "pointer" : "not-allowed", gap: 8 }}
-            >
-              {isUploading ? (
-                <Loader2 size={16} className="animate-spin" color="#FFFFFF" />
-              ) : (
-                <span style={{ color: "#FFFFFF", fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500, lineHeight: "18px" }}>Generate</span>
-              )}
-            </button>
-          </div>
-
           <input ref={fileInputRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={handleFileSelect} />
         </div>
+
+        {/* Mode toggle */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 16, backgroundColor: "#F4F4F5", borderRadius: 8, padding: 3 }}>
+          <button
+            onClick={() => setMode("brief")}
+            style={{
+              padding: "8px 18px", borderRadius: 6, border: "none", cursor: "pointer",
+              backgroundColor: mode === "brief" ? "#FFFFFF" : "transparent",
+              boxShadow: mode === "brief" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+              color: mode === "brief" ? "#1A1A1A" : "#71717A",
+              fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500,
+            }}
+          >
+            Brief
+          </button>
+          <button
+            onClick={() => setMode("detailed")}
+            style={{
+              padding: "8px 18px", borderRadius: 6, border: "none", cursor: "pointer",
+              backgroundColor: mode === "detailed" ? "#FFFFFF" : "transparent",
+              boxShadow: mode === "detailed" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+              color: mode === "detailed" ? "#1A1A1A" : "#71717A",
+              fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500,
+            }}
+          >
+            Detailed
+          </button>
+        </div>
+        <span style={{ color: "#9CA3AF", fontFamily: "'Inter', sans-serif", fontSize: 12, marginTop: 4 }}>
+          {mode === "brief" ? "Quick summary — 1-2 minutes" : "Comprehensive walkthrough — 5-10 minutes"}
+        </span>
+
+        <button
+          onClick={handleGenerate}
+          disabled={!canGenerate}
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: canGenerate ? "#2563EB" : "#93C5FD", borderRadius: 8, border: "none", height: 44, paddingInline: 24, cursor: canGenerate ? "pointer" : "not-allowed", gap: 8, marginTop: 12 }}
+        >
+          {isUploading ? (
+            <Loader2 size={16} className="animate-spin" color="#FFFFFF" />
+          ) : (
+            <span style={{ color: "#FFFFFF", fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500, lineHeight: "18px" }}>Generate</span>
+          )}
+        </button>
 
         {error && (
           <div style={{ marginTop: 16, padding: "12px 16px", borderRadius: 10, backgroundColor: "rgba(220, 38, 38, 0.05)", fontFamily: "'Inter', sans-serif", fontSize: 14, color: "#DC2626", width: 640 }}>{error}</div>

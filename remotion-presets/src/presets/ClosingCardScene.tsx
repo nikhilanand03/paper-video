@@ -257,8 +257,8 @@ export const ClosingCardScene: React.FC<ClosingCardProps> = ({
   });
 
   // === ACCENT LINES (inside card) ===
-  const topLineDelay = Math.round(0.8 * fps);
-  const topLineDuration = Math.round(0.8 * fps);
+  const topLineDelay = Math.round(0.5 * fps);
+  const topLineDuration = Math.round(0.5 * fps);
   const topLineProgress = interpolate(
     frame,
     [topLineDelay, topLineDelay + topLineDuration],
@@ -270,8 +270,8 @@ export const ClosingCardScene: React.FC<ClosingCardProps> = ({
     },
   );
 
-  const bottomLineDelay = Math.round(1.6 * fps);
-  const bottomLineDuration = Math.round(0.8 * fps);
+  const bottomLineDelay = Math.round(1.0 * fps);
+  const bottomLineDuration = Math.round(0.5 * fps);
   const bottomLineProgress = interpolate(
     frame,
     [bottomLineDelay, bottomLineDelay + bottomLineDuration],
@@ -284,8 +284,8 @@ export const ClosingCardScene: React.FC<ClosingCardProps> = ({
   );
 
   // === DIVIDER LINE under icon ===
-  const dividerDelay = Math.round(1.8 * fps);
-  const dividerDuration = Math.round(0.8 * fps);
+  const dividerDelay = Math.round(1.1 * fps);
+  const dividerDuration = Math.round(0.5 * fps);
   const dividerProgress = interpolate(
     frame,
     [dividerDelay, dividerDelay + dividerDuration],
@@ -294,7 +294,7 @@ export const ClosingCardScene: React.FC<ClosingCardProps> = ({
   );
 
   // === ICON ===
-  const iconDelay = Math.round(1.2 * fps);
+  const iconDelay = Math.round(0.7 * fps);
   const iconEntrance = spring({
     frame,
     fps,
@@ -319,8 +319,8 @@ export const ClosingCardScene: React.FC<ClosingCardProps> = ({
   const finalIconScale = iconScale * (1 + breathActive * (breathScale - 1));
 
   // === TITLE ===
-  const titleDelay = Math.round(1.8 * fps);
-  const titleDuration = Math.round(0.6 * fps);
+  const titleDelay = Math.round(1.1 * fps);
+  const titleDuration = Math.round(0.45 * fps);
   const titleProgress = interpolate(
     frame,
     [titleDelay, titleDelay + titleDuration],
@@ -336,8 +336,8 @@ export const ClosingCardScene: React.FC<ClosingCardProps> = ({
   const titleBlur = interpolate(titleProgress, [0, 1], [6, 0]);
 
   // === SUMMARY ===
-  const summaryDelay = Math.round(2.2 * fps);
-  const summaryDuration = Math.round(0.7 * fps);
+  const summaryDelay = Math.round(1.3 * fps);
+  const summaryDuration = Math.round(0.5 * fps);
   const summaryProgress = interpolate(
     frame,
     [summaryDelay, summaryDelay + summaryDuration],
@@ -352,8 +352,8 @@ export const ClosingCardScene: React.FC<ClosingCardProps> = ({
   const summaryTranslateY = interpolate(summaryProgress, [0, 1], [10, 0]);
 
   // === LINK PILL ===
-  const linkDelay = Math.round(2.8 * fps);
-  const linkDuration = Math.round(0.5 * fps);
+  const linkDelay = Math.round(1.7 * fps);
+  const linkDuration = Math.round(0.4 * fps);
   const linkOpacity = interpolate(
     frame,
     [linkDelay, linkDelay + linkDuration],
@@ -366,8 +366,8 @@ export const ClosingCardScene: React.FC<ClosingCardProps> = ({
   );
 
   // Light sweep on link pill
-  const sweepDelay = Math.round(3.5 * fps);
-  const sweepDuration = Math.round(0.8 * fps);
+  const sweepDelay = Math.round(2.1 * fps);
+  const sweepDuration = Math.round(0.6 * fps);
   const sweepProgress = interpolate(
     frame,
     [sweepDelay, sweepDelay + sweepDuration],

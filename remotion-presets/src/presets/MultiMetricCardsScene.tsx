@@ -345,8 +345,8 @@ export const MultiMetricCardsScene: React.FC<MultiMetricCardsProps> = ({
   });
 
   // === ACCENT LINE (top) ===
-  const topLineDelay = Math.round(0.8 * fps);
-  const topLineDuration = Math.round(0.8 * fps);
+  const topLineDelay = Math.round(0.5 * fps);
+  const topLineDuration = Math.round(0.5 * fps);
   const topLineProgress = interpolate(
     frame,
     [topLineDelay, topLineDelay + topLineDuration],
@@ -359,8 +359,8 @@ export const MultiMetricCardsScene: React.FC<MultiMetricCardsProps> = ({
   );
 
   // === TITLE (focus-in blur) ===
-  const titleDelay = Math.round(1.2 * fps);
-  const titleDuration = Math.round(0.6 * fps);
+  const titleDelay = Math.round(0.7 * fps);
+  const titleDuration = Math.round(0.45 * fps);
   const titleProgress = interpolate(
     frame,
     [titleDelay, titleDelay + titleDuration],
@@ -376,8 +376,8 @@ export const MultiMetricCardsScene: React.FC<MultiMetricCardsProps> = ({
   const titleBlur = interpolate(titleProgress, [0, 1], [6, 0]);
 
   // === DIVIDER under title ===
-  const dividerDelay = Math.round(1.6 * fps);
-  const dividerDuration = Math.round(0.8 * fps);
+  const dividerDelay = Math.round(1.0 * fps);
+  const dividerDuration = Math.round(0.5 * fps);
   const dividerProgress = interpolate(
     frame,
     [dividerDelay, dividerDelay + dividerDuration],
@@ -387,8 +387,8 @@ export const MultiMetricCardsScene: React.FC<MultiMetricCardsProps> = ({
 
   // === METRIC CARDS ===
   // Cards fan in from center outward
-  const metricCardBaseDelay = Math.round(2.0 * fps);
-  const cardStagger = Math.round(0.15 * fps);
+  const metricCardBaseDelay = Math.round(1.2 * fps);
+  const cardStagger = Math.round(0.09 * fps);
 
   // Sort indices by distance from center (center first)
   const centerIndex = (metricCount - 1) / 2;
@@ -408,7 +408,7 @@ export const MultiMetricCardsScene: React.FC<MultiMetricCardsProps> = ({
   const cardsY = 320;
 
   // === COUNT-UP DURATION ===
-  const countUpDuration = Math.round(1.2 * fps);
+  const countUpDuration = Math.round(0.8 * fps);
 
   return (
     <AbsoluteFill

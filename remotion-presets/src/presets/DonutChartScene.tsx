@@ -373,8 +373,8 @@ export const DonutChartScene: React.FC<DonutChartProps> = ({
   });
 
   // === ACCENT LINE (top) ===
-  const topLineDelay = Math.round(0.8 * fps);
-  const topLineDuration = Math.round(0.8 * fps);
+  const topLineDelay = Math.round(0.5 * fps);
+  const topLineDuration = Math.round(0.5 * fps);
   const topLineProgress = interpolate(
     frame,
     [topLineDelay, topLineDelay + topLineDuration],
@@ -387,8 +387,8 @@ export const DonutChartScene: React.FC<DonutChartProps> = ({
   );
 
   // === TITLE (focus-in blur) ===
-  const titleDelay = Math.round(1.2 * fps);
-  const titleDuration = Math.round(0.6 * fps);
+  const titleDelay = Math.round(0.7 * fps);
+  const titleDuration = Math.round(0.45 * fps);
   const titleProgress = interpolate(
     frame,
     [titleDelay, titleDelay + titleDuration],
@@ -404,8 +404,8 @@ export const DonutChartScene: React.FC<DonutChartProps> = ({
   const titleBlur = interpolate(titleProgress, [0, 1], [6, 0]);
 
   // === DIVIDER under title ===
-  const dividerDelay = Math.round(1.6 * fps);
-  const dividerDuration = Math.round(0.8 * fps);
+  const dividerDelay = Math.round(1.0 * fps);
+  const dividerDuration = Math.round(0.5 * fps);
   const dividerProgress = interpolate(
     frame,
     [dividerDelay, dividerDelay + dividerDuration],
@@ -414,9 +414,9 @@ export const DonutChartScene: React.FC<DonutChartProps> = ({
   );
 
   // === DONUT SEGMENTS ===
-  const donutBaseDelay = Math.round(2.0 * fps);
-  const segmentDrawDuration = Math.round(0.5 * fps);
-  const segmentStagger = Math.round(0.2 * fps);
+  const donutBaseDelay = Math.round(1.2 * fps);
+  const segmentDrawDuration = Math.round(0.35 * fps);
+  const segmentStagger = Math.round(0.12 * fps);
 
   // Compute arc midpoint radius for stroke arcs
   const midR = (DONUT_OUTER_R + DONUT_INNER_R) / 2;
@@ -484,8 +484,8 @@ export const DonutChartScene: React.FC<DonutChartProps> = ({
   const centerScale = interpolate(centerProgress, [0, 1], [0.8, 1]);
 
   // === LEGEND ===
-  const legendBaseDelay = donutBaseDelay + Math.round(0.6 * fps);
-  const legendStagger = Math.round(0.15 * fps);
+  const legendBaseDelay = donutBaseDelay + Math.round(0.35 * fps);
+  const legendStagger = Math.round(0.09 * fps);
 
   // Legend swatch rough data
   const swatchData = useMemo(() => {

@@ -71,8 +71,8 @@ export const RemotionRoot: React.FC = () => {
         component={MyComposition}
         durationInFrames={210}
         fps={30}
-        width={1280}
-        height={720}
+        width={1920}
+        height={1080}
       />
       <Composition
         id="TitleCard"
@@ -131,7 +131,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={300}
         fps={30}
         width={1920}
-        height={2080}
+        height={1080}
         defaultProps={{
           imageSrc: "https://picsum.photos/1200/600",
           caption: "This is a sample caption describing the image.",

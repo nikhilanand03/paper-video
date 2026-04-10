@@ -254,7 +254,7 @@ export const TitleCard: React.FC<TitleCardProps> = ({
   });
 
   // === TEXT REVEAL TIMING ===
-  const titleStartFrame = 1.5 * fps;
+  const titleStartFrame = 0.9 * fps;
   // Split title into lines (roughly 50 chars per line)
   const splitTitle = useCallback((text: string): string[] => {
     const words = text.split(" ");
@@ -273,11 +273,11 @@ export const TitleCard: React.FC<TitleCardProps> = ({
   }, []);
 
   const titleLines = splitTitle(title);
-  const lineStagger = 0.2 * fps; // 200ms between lines
+  const lineStagger = 0.12 * fps; // 120ms between lines
 
   // Meta info (authors, venue, year) stagger
-  const metaStartFrame = titleStartFrame + titleLines.length * lineStagger + 0.8 * fps;
-  const metaStagger = 0.2 * fps;
+  const metaStartFrame = titleStartFrame + titleLines.length * lineStagger + 0.5 * fps;
+  const metaStagger = 0.12 * fps;
 
   // Rough.js divider timing
   const dividerStartFrame = metaStartFrame - 0.3 * fps;

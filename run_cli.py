@@ -17,11 +17,33 @@ import sys
 import time
 from pathlib import Path
 
-logging.basicConfig(
-    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+# Color codes for terminal output
+_RED = "\033[91m"
+_YELLOW = "\033[93m"
+_GREEN = "\033[92m"
+_CYAN = "\033[96m"
+_DIM = "\033[2m"
+_RESET = "\033[0m"
+_BOLD = "\033[1m"
+
+
+class _ColorFormatter(logging.Formatter):
+    """Color log lines by level and highlight timing info."""
+    def format(self, record):
+        msg = super().format(record)
+        if record.levelno >= logging.WARNING:
+            return f"{_RED}{msg}{_RESET}"
+        if "↳" in msg or "done" in msg.lower():
+            return f"{_DIM}{msg}{_RESET}"
+        return msg
+
+
+_handler = logging.StreamHandler()
+_handler.setFormatter(_ColorFormatter(
+    fmt="%(asctime)s %(levelname)s [%(name)s] %(message)s",
     datefmt="%H:%M:%S",
-    level=logging.INFO,
-)
+))
+logging.basicConfig(level=logging.INFO, handlers=[_handler])
 
 from tqdm import tqdm
 
@@ -48,6 +70,8 @@ def main() -> None:
     parser.add_argument("--till-plan", action="store_true", help="Run up to planning (suffix: _tp)")
     parser.add_argument("--till-render", action="store_true", help="Run up to rendering (suffix: _tr)")
     parser.add_argument("--till-tts", action="store_true", help="Run up to TTS (suffix: _tt)")
+    parser.add_argument("--mode", choices=["brief", "detailed"], default="brief",
+                        help="brief = short video (single LLM call), detailed = comprehensive video (per-section calls)")
     args = parser.parse_args()
 
     pdf_path = Path(args.pdf).resolve()
@@ -105,22 +129,32 @@ def main() -> None:
         pbar.n = stage_index.get(status, pbar.n) + 1
         pbar.refresh()
 
-    run_pipeline(job_id, on_stage=on_stage, frames_only=frames_only, till_stage=till_stage)
+    run_pipeline(job_id, on_stage=on_stage, frames_only=frames_only, till_stage=till_stage, plan_mode=args.mode)
     # Record the final stage
     if prev_label:
         stage_times.append((prev_label, time.monotonic() - stage_start))
     pbar.close()
     total_time = time.monotonic() - pipeline_start
 
-    # Print timing breakdown
-    print(f"\n{'─' * 48}")
-    print(f"{'Stage':<25} {'Time':>8} {'% Total':>8}")
-    print(f"{'─' * 48}")
+    # Print timing breakdown with color-coded bottlenecks
+    print(f"\n{_BOLD}{'─' * 52}{_RESET}")
+    print(f"{_BOLD}{'Stage':<25} {'Time':>8} {'% Total':>8}  {'':>5}{_RESET}")
+    print(f"{'─' * 52}")
     for label, elapsed in stage_times:
         pct = (elapsed / total_time * 100) if total_time > 0 else 0
-        print(f"  {label:<23} {elapsed:>7.1f}s {pct:>7.1f}%")
-    print(f"{'─' * 48}")
-    print(f"  {'Total':<23} {total_time:>7.1f}s")
+        # Red for >40%, yellow for >25%, green for rest
+        if pct > 40:
+            color = _RED
+            bar = "█" * int(pct / 5)
+        elif pct > 25:
+            color = _YELLOW
+            bar = "█" * int(pct / 5)
+        else:
+            color = _GREEN
+            bar = "█" * int(pct / 5)
+        print(f"  {color}{label:<23} {elapsed:>7.1f}s {pct:>7.1f}%  {bar}{_RESET}")
+    print(f"{'─' * 52}")
+    print(f"  {_BOLD}{'Total':<23} {total_time:>7.1f}s{_RESET}")
 
     # Save timing stats as JSON in the job output folder
     job_data = get_job(job_id)

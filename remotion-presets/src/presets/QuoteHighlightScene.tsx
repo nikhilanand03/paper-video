@@ -312,8 +312,8 @@ export const QuoteHighlightScene: React.FC<QuoteHighlightProps> = ({
   });
 
   // === ACCENT LINE (top) ===
-  const topLineDelay = Math.round(0.8 * fps);
-  const topLineDuration = Math.round(0.8 * fps);
+  const topLineDelay = Math.round(0.5 * fps);
+  const topLineDuration = Math.round(0.5 * fps);
   const topLineProgress = interpolate(
     frame,
     [topLineDelay, topLineDelay + topLineDuration],
@@ -326,8 +326,8 @@ export const QuoteHighlightScene: React.FC<QuoteHighlightProps> = ({
   );
 
   // === DECORATIVE QUOTE MARK ===
-  const quoteMarkDelay = Math.round(1.0 * fps);
-  const quoteMarkDuration = Math.round(1.2 * fps);
+  const quoteMarkDelay = Math.round(0.6 * fps);
+  const quoteMarkDuration = Math.round(0.8 * fps);
   const quoteMarkPaths = useMemo(() => generateRoughQuoteMark(77), []);
 
   const quoteMarkSpring = spring({
@@ -352,9 +352,9 @@ export const QuoteHighlightScene: React.FC<QuoteHighlightProps> = ({
 
   // === WORD-BY-WORD QUOTE TEXT ===
   const words = quote.split(/\s+/);
-  const wordStartDelay = Math.round(1.4 * fps);
-  const wordStagger = Math.round(0.08 * fps); // frames between each word
-  const wordFadeDuration = Math.round(0.3 * fps);
+  const wordStartDelay = Math.round(0.85 * fps);
+  const wordStagger = Math.round(0.05 * fps); // frames between each word
+  const wordFadeDuration = Math.round(0.2 * fps);
 
   // Find which words are part of the highlight phrase
   const highlightWordIndices: Set<number> = useMemo(() => {
@@ -433,8 +433,8 @@ export const QuoteHighlightScene: React.FC<QuoteHighlightProps> = ({
   );
 
   // === BOTTOM ACCENT LINE ===
-  const bottomLineDelay = Math.round(1.6 * fps);
-  const bottomLineDuration = Math.round(0.8 * fps);
+  const bottomLineDelay = Math.round(1.0 * fps);
+  const bottomLineDuration = Math.round(0.5 * fps);
   const bottomLineProgress = interpolate(
     frame,
     [bottomLineDelay, bottomLineDelay + bottomLineDuration],

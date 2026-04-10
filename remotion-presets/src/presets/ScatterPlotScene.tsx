@@ -628,9 +628,9 @@ export const ScatterPlotScene: React.FC<Props> = ({
             {/* Scatter points - rain in from above */}
             {groups.map((group, gIdx) => {
               const color = GROUP_COLORS[gIdx % GROUP_COLORS.length];
-              const GROUP_STAGGER = 15;
-              const POINT_STAGGER = 3;
-              const groupDelay = 15 + gIdx * GROUP_STAGGER;
+              const GROUP_STAGGER = 9;
+              const POINT_STAGGER = 2;
+              const groupDelay = 9 + gIdx * GROUP_STAGGER;
 
               return (
                 <g key={group.label}>

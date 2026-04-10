@@ -287,14 +287,14 @@ export const ComparisonSplitScene: React.FC<ComparisonSplitProps> = ({
   const borderProgress = interpolate(frame, [1 * fps, 3 * fps], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
   // === ACCENT LINE ===
-  const accentDelay = Math.round(0.8 * fps);
-  const accentProgress = interpolate(frame, [accentDelay, accentDelay + Math.round(0.8 * fps)], [0, 1], {
+  const accentDelay = Math.round(0.5 * fps);
+  const accentProgress = interpolate(frame, [accentDelay, accentDelay + Math.round(0.5 * fps)], [0, 1], {
     extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.quad),
   });
 
   // === HEADING ===
-  const headingDelay = Math.round(1.0 * fps);
-  const headingDuration = Math.round(0.6 * fps);
+  const headingDelay = Math.round(0.6 * fps);
+  const headingDuration = Math.round(0.45 * fps);
   const headingProgress = interpolate(frame, [headingDelay, headingDelay + headingDuration], [0, 1], {
     extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.quad),
   });
@@ -303,8 +303,8 @@ export const ComparisonSplitScene: React.FC<ComparisonSplitProps> = ({
   const headingBlur = interpolate(headingProgress, [0, 1], [6, 0]);
 
   // === PANELS ===
-  const leftPanelDelay = Math.round(1.4 * fps);
-  const rightPanelDelay = Math.round(1.4 * fps);
+  const leftPanelDelay = Math.round(0.85 * fps);
+  const rightPanelDelay = Math.round(0.85 * fps);
   const leftPanelSpring = spring({
     frame, fps, delay: leftPanelDelay,
     config: { damping: 200 },
@@ -320,18 +320,18 @@ export const ComparisonSplitScene: React.FC<ComparisonSplitProps> = ({
   const rightPanelX = interpolate(rightPanelSpring, [0, 1], [16, 0]);
 
   // Panel header divider lines
-  const headerLineDelay = Math.round(2.0 * fps);
-  const headerLineProgress = interpolate(frame, [headerLineDelay, headerLineDelay + Math.round(0.6 * fps)], [0, 1], {
+  const headerLineDelay = Math.round(1.2 * fps);
+  const headerLineProgress = interpolate(frame, [headerLineDelay, headerLineDelay + Math.round(0.4 * fps)], [0, 1], {
     extrapolateLeft: "clamp", extrapolateRight: "clamp",
   });
 
   // Panel border (rough.js)
-  const panelBorderProgress = interpolate(frame, [1.6 * fps, 3.0 * fps], [0, 1], {
+  const panelBorderProgress = interpolate(frame, [1.0 * fps, 2.0 * fps], [0, 1], {
     extrapolateLeft: "clamp", extrapolateRight: "clamp",
   });
 
   // === VS BADGE ===
-  const vsDelay = Math.round(2.2 * fps);
+  const vsDelay = Math.round(1.3 * fps);
   const vsSpring = spring({
     frame, fps, delay: vsDelay,
     config: { damping: 15, stiffness: 180 },
@@ -340,14 +340,14 @@ export const ComparisonSplitScene: React.FC<ComparisonSplitProps> = ({
   const vsOpacity = interpolate(vsSpring, [0, 1], [0, 1]);
 
   // VS rough circle
-  const vsCircleProgress = interpolate(frame, [vsDelay, vsDelay + Math.round(0.6 * fps)], [0, 1], {
+  const vsCircleProgress = interpolate(frame, [vsDelay, vsDelay + Math.round(0.4 * fps)], [0, 1], {
     extrapolateLeft: "clamp", extrapolateRight: "clamp",
   });
 
   // === BULLET ITEMS ===
-  const bulletBaseDelay = Math.round(2.4 * fps);
-  const bulletStagger = Math.round(0.15 * fps);
-  const bulletDuration = Math.round(0.4 * fps);
+  const bulletBaseDelay = Math.round(1.4 * fps);
+  const bulletStagger = Math.round(0.09 * fps);
+  const bulletDuration = Math.round(0.3 * fps);
 
   // Panel layout constants (relative to card)
   const panelPadX = 60;
@@ -557,7 +557,7 @@ export const ComparisonSplitScene: React.FC<ComparisonSplitProps> = ({
                 <div style={{ display: "flex", flexDirection: "column", gap: 20, padding: "0 28px" }}>
                   {right.points.map((point, idx) => {
                     // Right-side bullets stagger slightly after left
-                    const itemStart = bulletBaseDelay + Math.round(0.3 * fps) + idx * bulletStagger;
+                    const itemStart = bulletBaseDelay + Math.round(0.18 * fps) + idx * bulletStagger;
                     const progress = interpolate(frame, [itemStart, itemStart + bulletDuration], [0, 1], {
                       extrapolateLeft: "clamp", extrapolateRight: "clamp",
                       easing: Easing.out(Easing.quad),

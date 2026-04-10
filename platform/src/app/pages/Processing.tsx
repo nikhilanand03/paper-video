@@ -10,6 +10,7 @@ import {
 } from "../lib/data";
 import { getJobStatus, getJobData, statusToStageIndex } from "../lib/api";
 import { useAuth } from "../lib/useAuth";
+import { useJobs } from "../lib/JobContext";
 import UserMenu from "../components/UserMenu";
 
 // Generates a plausible scene plan from section titles
@@ -150,6 +151,7 @@ function simulateExtraction(name: string, url: string) {
 export default function Processing() {
   const navigate = useNavigate();
   const { user, signInWithGoogle, signOut } = useAuth();
+  const { addJob, removeJob } = useJobs();
   const { jobId } = useParams();
   const [searchParams] = useSearchParams();
 
@@ -178,6 +180,13 @@ export default function Processing() {
 
   // ── Real backend polling (non-demo, non-example uploads) ──
   const useRealBackend = !isDemo && !isExample && !!jobId;
+
+  // Register job in context so banner can track it
+  useEffect(() => {
+    if (useRealBackend && jobId) {
+      addJob(jobId, uploadName.replace(/\.pdf$/i, "") || "Paper");
+    }
+  }, [useRealBackend, jobId]);
 
   useEffect(() => {
     if (!useRealBackend) return;
@@ -289,6 +298,7 @@ export default function Processing() {
             });
           }
           setCompletedTime(elapsedTimeRef.current);
+          removeJob(jobId!);
           setTimeout(() => navigate(`/v/${jobId}`), 2000);
         }
 

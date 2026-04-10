@@ -131,6 +131,7 @@ def synthesize_all(
     # Per-scene timing, indexed by scene number
     scene_timing: list[dict | None] = [None] * len(narrations)
 
+    completed = 0
     with ThreadPoolExecutor(max_workers=MAX_TTS_CONCURRENT) as pool:
         futures = {
             pool.submit(synthesize_scene, text, out, voice, sc): idx
@@ -139,6 +140,11 @@ def synthesize_all(
         for fut in as_completed(futures):
             idx = futures[fut]
             result = fut.result()
+            completed += 1
+            logger.info("  TTS %d/%d done: scene %d (%.1fs, %d chars%s)",
+                        completed, len(narrations), idx + 1,
+                        result["total_time"], result["text_length"],
+                        f", {result['retries']} retries" if result["retries"] else "")
             scene_timing[idx] = {
                 "scene": idx,
                 "config_time": result["config_time"],

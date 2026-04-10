@@ -625,9 +625,9 @@ export const LineChartScene: React.FC<Props> = ({ title, labels, datasets }) => 
 
             {/* Lines and points */}
             {lineData.map((ds, dsIdx) => {
-              const STAGGER_DS = 12;
-              const lineDelay = 15 + dsIdx * STAGGER_DS;
-              const lineDrawDuration = 30;
+              const STAGGER_DS = 7;
+              const lineDelay = 9 + dsIdx * STAGGER_DS;
+              const lineDrawDuration = 20;
 
               const lineProgress = interpolate(
                 frame,

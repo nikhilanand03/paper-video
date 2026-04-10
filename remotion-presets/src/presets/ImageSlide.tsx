@@ -163,7 +163,7 @@ export const ImageSlide: React.FC<ImageSlideProps> = ({
   // === PAPER CARD DIMENSIONS ===
   const cardW = 1400;
   const cardH = 880;
-  const imgMaxH = imageHeightProp ?? 300;
+  const imgMaxH = imageHeightProp ?? 520;
 
   // === ENTRANCE (0–2s): Scale + blur ===
   const entranceSpring = spring({
@@ -322,30 +322,15 @@ export const ImageSlide: React.FC<ImageSlideProps> = ({
       )
     : 1.0;
 
-  // === CAPTION TYPEWRITER ===
-  const captionStartFrame = imageRevealEnd + 0.3 * fps;
-  const charDuration = (40 / 1000) * fps; // 40ms per char
-  const captionLCG = useMemo(() => createLCG(42), []);
-  const captionJitters = useMemo(() => {
-    const lcg = createLCG(42);
-    return caption.split("").map(() => lcg() * 0.4 + 0.8); // jitter multiplier 0.8–1.2
-  }, [caption]);
-
-  const visibleCaptionChars = useMemo(() => {
-    let elapsed = frame - captionStartFrame;
-    if (elapsed <= 0) return 0;
-    let count = 0;
-    let time = 0;
-    for (let i = 0; i < caption.length; i++) {
-      time += charDuration * (captionJitters[i] ?? 1);
-      if (elapsed >= time) {
-        count = i + 1;
-      } else {
-        break;
-      }
-    }
-    return count;
-  }, [frame, captionStartFrame, caption, charDuration, captionJitters]);
+  // === CAPTION FADE-IN ===
+  const captionStartFrame = imageRevealEnd + 0.2 * fps;
+  const captionFadeDuration = 0.5 * fps;
+  const captionOpacity = interpolate(
+    frame,
+    [captionStartFrame, captionStartFrame + captionFadeDuration],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
 
   // === ROUGH.JS BORDER TIMING ===
   const borderProgress = interpolate(
@@ -796,24 +781,23 @@ export const ImageSlide: React.FC<ImageSlideProps> = ({
               )}
             </div>
 
-            {/* Caption — typewriter effect */}
+            {/* Caption — fade in */}
             <div
               style={{
                 fontFamily: serifFont,
-                fontSize: 24,
+                fontSize: 22,
                 fontStyle: "italic",
                 color: "#777",
-                marginTop: 16,
-                minHeight: 30,
+                marginTop: 12,
+                minHeight: 28,
                 alignSelf: "center",
                 textAlign: "center",
                 maxWidth: imgAreaW,
+                opacity: captionOpacity,
+                lineHeight: "30px",
               }}
             >
-              {visibleCaptionChars > 0 ? caption.slice(0, visibleCaptionChars) : ""}
-              {visibleCaptionChars > 0 && visibleCaptionChars < caption.length && (
-                <span style={{ opacity: frame % (fps / 4) < fps / 8 ? 1 : 0 }}>|</span>
-              )}
+              {caption}
             </div>
           </div>
         </div>

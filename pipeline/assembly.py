@@ -23,8 +23,11 @@ MAX_ASSEMBLY_WORKERS = int(os.environ.get("ASSEMBLY_CONCURRENCY", "4"))
 def _run(cmd: list[str]) -> None:
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        logger.error("ffmpeg failed (exit %d): %s", result.returncode, result.stderr[:500])
-        raise RuntimeError(f"ffmpeg failed: {result.stderr[:500]}")
+        # Extract the actual error (last few lines), skip the version banner
+        err_lines = [l for l in result.stderr.strip().splitlines() if not l.startswith(("  ", "ffmpeg version", "  built", "  configuration", "  lib"))]
+        err_msg = "\n".join(err_lines[-10:]) or result.stderr[-1000:]
+        logger.error("ffmpeg failed (exit %d): %s", result.returncode, err_msg)
+        raise RuntimeError(f"ffmpeg failed: {err_msg}")
 
 
 def _get_audio_duration(mp3_path: Path) -> float:
@@ -184,6 +187,8 @@ def _make_video_clip(
 
 def _assemble_one(args: tuple) -> Path:
     """Assemble a single scene clip (for parallel execution)."""
+    import time as _time
+    t0 = _time.monotonic()
     i, result, mp3, clips_dir = args
     clip = clips_dir / f"clip_{i:03d}.mp4"
     if result.mode == "video" and result.video_path:
@@ -195,6 +200,7 @@ def _assemble_one(args: tuple) -> Path:
         if png is None:
             raise RuntimeError(f"Scene {i} has no renderable frame")
         _make_static_clip(png, mp3, clip)
+    logger.info("  Clip %d assembled: %.1fs (mode=%s)", i + 1, _time.monotonic() - t0, result.mode)
     return clip
 
 
@@ -231,8 +237,13 @@ def _concat_filter(clip_paths: list[Path], output_path: Path) -> Path:
     for p in clip_paths:
         inputs += ["-i", str(p)]
 
-    filter_parts = "".join(f"[{i}:v:0][{i}:a:0]" for i in range(n))
-    filter_str = f"{filter_parts}concat=n={n}:v=1:a=1[outv][outa]"
+    # Scale all clips to the same resolution before concat (handles mixed sizes)
+    scale_parts = "".join(
+        f"[{i}:v:0]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,setsar=1[v{i}];"
+        for i in range(n)
+    )
+    concat_inputs = "".join(f"[v{i}][{i}:a:0]" for i in range(n))
+    filter_str = f"{scale_parts}{concat_inputs}concat=n={n}:v=1:a=1[outv][outa]"
 
     _run([
         "ffmpeg", "-y",

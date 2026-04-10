@@ -337,63 +337,82 @@ export const DataTableScene: React.FC<DataTableProps> = ({
   const titleBlurVal = interpolate(titleProgress, [0, 1], [12, 0]);
   const titleScaleVal = interpolate(titleProgress, [0, 1], [1.08, 1]);
 
-  // === TABLE LAYOUT ===
-  const contentPadX = 90;
+  // === TABLE LAYOUT (per-column font sizing) ===
+  const numCols = columns.length;
+  const numRows = rows.length;
+  const contentPadX = numCols > 8 ? 40 : numCols > 5 ? 60 : 90;
   const contentPadTop = 80;
   const tableTop = contentPadTop + 90;
   const tableLeft = contentPadX;
   const tableRight = CARD_W - contentPadX;
   const tableWidth = tableRight - tableLeft;
-  const headerRowHeight = 48;
-  const bodyRowHeight = 48;
-  const numCols = columns.length;
-  const numRows = rows.length;
   const colWidth = tableWidth / numCols;
+  const cellPad = 8;
+
+  // Per-column font size: find the max font that fits the longest text in that column
+  // within the column width, allowing up to 4 lines of wrapping.
+  const MAX_LINES = 4;
+  const colFontSizes = useMemo(() => {
+    return columns.map((header, colIdx) => {
+      const cellTexts = rows.map(r => (r[colIdx] ?? "").replace(/\n/g, " "));
+      const longestText = [header, ...cellTexts].reduce((a, b) => a.length > b.length ? a : b, "");
+      const availW = colWidth - cellPad * 2;
+
+      // Binary search for the largest font size (8–24) that fits in MAX_LINES
+      let lo = 8, hi = 24;
+      while (lo < hi) {
+        const mid = Math.ceil((lo + hi) / 2);
+        const charW = mid * 0.55;
+        const charsPerLine = Math.max(1, Math.floor(availW / charW));
+        const lines = Math.ceil(longestText.length / charsPerLine);
+        if (lines <= MAX_LINES) lo = mid;
+        else hi = mid - 1;
+      }
+      return lo;
+    });
+  }, [columns, rows, colWidth, cellPad]);
+
+  // Row height based on the largest per-column font size and wrapping
+  const maxColFont = Math.max(...colFontSizes);
+  const bodyRowHeight = Math.max(maxColFont * (MAX_LINES + 0.5) + 8, 44);
+  const headerRowHeight = Math.max(Math.max(...colFontSizes) + 20, 36);
+
   const tableBottom = tableTop + headerRowHeight + numRows * bodyRowHeight;
 
   // === GRID LINES ANIMATION (drawn like handwriting) ===
-  const gridBaseDelay = Math.round(1.6 * fps);
-  const hLineStagger = Math.round(0.07 * fps);
-  const hLineDuration = Math.round(0.5 * fps);
+  const gridBaseDelay = Math.round(0.8 * fps);
+  const hLineStagger = Math.round(0.03 * fps);
+  const hLineDuration = Math.round(0.3 * fps);
   const numHLines = numRows + 1;
 
   const vLineBaseDelay =
-    gridBaseDelay + numHLines * hLineStagger + Math.round(0.05 * fps);
-  const vLineStagger = Math.round(0.1 * fps);
-  const vLineDuration = Math.round(0.5 * fps);
+    gridBaseDelay + numHLines * hLineStagger + Math.round(0.02 * fps);
+  const vLineStagger = Math.round(0.04 * fps);
+  const vLineDuration = Math.round(0.3 * fps);
   const numVLines = numCols - 1;
 
-  // === HEADER CELLS (individual stagger, left to right) ===
+  // === HEADER CELLS (all at once) ===
   const headerBaseDelay =
-    vLineBaseDelay + numVLines * vLineStagger + Math.round(0.08 * fps);
-  const headerCellStagger = Math.round(0.08 * fps);
-  const headerCellDuration = Math.round(0.3 * fps);
+    vLineBaseDelay + numVLines * vLineStagger + Math.round(0.03 * fps);
+  const headerCellStagger = 0;
+  const headerCellDuration = Math.round(0.2 * fps);
 
-  // === HEADER UNDERLINES (rough.js, drawn after header text appears) ===
-  const headerUnderlineDelay = headerBaseDelay + numCols * headerCellStagger;
-  const headerUnderlineDuration = Math.round(0.4 * fps);
-  const headerUnderlineStagger = Math.round(0.06 * fps);
+  // === HEADER UNDERLINES (all at once after headers) ===
+  const headerUnderlineDelay = headerBaseDelay + headerCellDuration;
+  const headerUnderlineDuration = Math.round(0.25 * fps);
+  const headerUnderlineStagger = 0;
 
-  // === BODY CELLS (typewriter fill: cell-by-cell, row-by-row) ===
+  // === BODY CELLS — all rows animate in parallel, cells sweep left-to-right ===
   const bodyCellBaseDelay =
-    headerUnderlineDelay + numCols * headerUnderlineStagger + Math.round(0.1 * fps);
-  const cellStagger = Math.round(0.06 * fps); // per cell within a row
-  const rowGap = Math.round(0.04 * fps); // extra gap between rows
-  const cellFadeDuration = Math.round(0.25 * fps);
+    headerUnderlineDelay + numCols * headerUnderlineStagger + Math.round(0.05 * fps);
+  const cellFadeDuration = Math.round(0.15 * fps);
 
-  // Calculate the delay for each cell
-  const getCellDelay = (rowIdx: number, colIdx: number): number => {
-    let delay = bodyCellBaseDelay;
-    // Add time for all previous rows
-    for (let r = 0; r < rowIdx; r++) {
-      delay += numCols * cellStagger + rowGap;
-    }
-    // Add time for cells in current row before this one
-    delay += colIdx * cellStagger;
-    return delay;
+  // All cells appear at the same time
+  const getCellDelay = (_rowIdx: number, _colIdx: number): number => {
+    return bodyCellBaseDelay;
   };
 
-  // Row background wash fade-in (starts slightly before its first cell)
+  // Row background wash fade-in (all rows at same time)
   const getRowWashDelay = (rowIdx: number): number => {
     return getCellDelay(rowIdx, 0) - Math.round(0.05 * fps);
   };
@@ -675,16 +694,19 @@ export const DataTableScene: React.FC<DataTableProps> = ({
                         width: colWidth,
                         display: "flex",
                         alignItems: "center",
-                        paddingLeft: 12,
-                        paddingRight: 12,
+                        paddingLeft: cellPad,
+                        paddingRight: cellPad,
                         fontFamily: sansFont,
-                        fontSize: 14,
+                        fontSize: Math.min(colFontSizes[idx], 14),
                         fontWeight: 600,
                         color: HEADER_COLOR,
                         textTransform: "uppercase",
-                        letterSpacing: "0.08em",
+                        letterSpacing: "0.05em",
                         opacity: cellProgress,
                         transform: `translateY(${cellTranslateY}px)`,
+                        overflow: "hidden",
+                        whiteSpace: "nowrap",
+                        textOverflow: "ellipsis",
                       }}
                     >
                       {col}
@@ -752,17 +774,24 @@ export const DataTableScene: React.FC<DataTableProps> = ({
                             paddingLeft: 12,
                             paddingRight: 12,
                             fontFamily: isNumeric ? monoFont : sansFont,
-                            fontSize: 20,
+                            fontSize: colFontSizes[colIdx] ?? 16,
                             fontWeight: 400,
                             color: "#3D3428",
-                            lineHeight: "28px",
+                            lineHeight: `${(colFontSizes[colIdx] ?? 16) + 6}px`,
                             opacity: cellOpacity,
                             transform: `translateY(${cellTranslateY}px)`,
                             position: "relative",
                             zIndex: 1,
+                            paddingLeft: cellPad,
+                            paddingRight: cellPad,
+                            overflow: "hidden",
+                            display: "-webkit-box",
+                            WebkitLineClamp: MAX_LINES,
+                            WebkitBoxOrient: "vertical" as const,
+                            wordBreak: "break-word" as const,
                           }}
                         >
-                          {cell}
+                          {cell.replace(/\n/g, " ")}
                         </div>
                       );
                     })}

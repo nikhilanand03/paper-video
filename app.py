@@ -45,9 +45,11 @@ app.add_middleware(
 
 
 @app.post("/upload")
-async def upload_pdf(file: UploadFile):
+async def upload_pdf(file: UploadFile, mode: str = "brief"):
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(400, "Please upload a PDF file.")
+    if mode not in ("brief", "detailed"):
+        mode = "brief"
 
     # Save uploaded PDF to a temp location outside uploaded-pdfs,
     # so create_job will run _store_pdf to deduplicate it properly.
@@ -60,7 +62,7 @@ async def upload_pdf(file: UploadFile):
     tmp_path.unlink(missing_ok=True)
 
     # Run pipeline in background thread
-    t = threading.Thread(target=run_pipeline, args=(job_id,), daemon=True)
+    t = threading.Thread(target=run_pipeline, args=(job_id,), kwargs={"plan_mode": mode}, daemon=True)
     t.start()
 
     return {"job_id": job_id}

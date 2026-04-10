@@ -6,7 +6,10 @@ Each scene is rendered as a standalone MP4 file at 1920x1080 / 30fps.
 
 from __future__ import annotations
 
+import base64
 import json
+import logging
+import mimetypes
 import os
 import subprocess
 import time
@@ -16,6 +19,8 @@ from typing import Any
 
 from pipeline.render import SceneRenderResult
 from pipeline.template_registry import get_template
+
+logger = logging.getLogger(__name__)
 
 FPS = 30
 # Minimum render duration — ensures all entrance animations complete
@@ -84,6 +89,35 @@ def adapt_props(template_name: str, data: dict) -> dict:
         if authors and isinstance(authors[0], str):
             authors = [{"name": a} for a in authors if a.strip()]
         props["authors"] = authors
+
+    # ── image_with_caption: imagePath → imageSrc (as data URI), callouts → annotations ──
+    if template_name == "image_with_caption":
+        if "imagePath" in props:
+            props["imageSrc"] = props.pop("imagePath")
+        # Convert local file paths to data URIs so Remotion can render them
+        src = props.get("imageSrc", "")
+        if src and not src.startswith(("http://", "https://", "data:")):
+            if Path(src).is_file():
+                mime = mimetypes.guess_type(src)[0] or "image/png"
+                b64 = base64.b64encode(Path(src).read_bytes()).decode()
+                props["imageSrc"] = f"data:{mime};base64,{b64}"
+            else:
+                # Invalid path (e.g. "table_0" key) — use a 1x1 transparent PNG placeholder
+                logger.warning("  ImageSlide scene has invalid imageSrc: %s — using placeholder", src)
+                props["imageSrc"] = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+        if "callouts" in props:
+            annotations = []
+            for c in _ensure_list(props.pop("callouts")):
+                if isinstance(c, dict):
+                    annotations.append({
+                        "x": _ensure_num(c.get("x", 0)),
+                        "y": _ensure_num(c.get("y", 0)),
+                        "width": _ensure_num(c.get("width", 10)),
+                        "height": _ensure_num(c.get("height", 10)),
+                        "label": _ensure_str(c.get("label", "")),
+                    })
+            if annotations:
+                props["annotations"] = annotations
 
     # ── section_header: sectionNumber must be int ──
     if template_name == "section_header":
@@ -176,8 +210,14 @@ def _render_remotion_scene(
     scene,
     index: int,
     output_dir: Path,
+    bundle_path: str | None = None,
 ) -> SceneRenderResult:
-    """Render a single scene using Remotion CLI → MP4."""
+    """Render a single scene using Remotion CLI → MP4.
+
+    Only renders the entrance animation frames (per-template setting).
+    Assembly extends the last frame with tpad to match TTS audio duration.
+    If bundle_path is provided, skips per-render bundling (~40-50s faster).
+    """
     t0 = time.monotonic()
     tmpl = get_template(scene.template)
 
@@ -188,19 +228,26 @@ def _render_remotion_scene(
         )
 
     comp_id = tmpl.remotion_comp_id
+    anim_frames = tmpl.remotion_anim_frames
     props = adapt_props(scene.template, scene.data)
     props_json = json.dumps(props)
 
     out_path = output_dir / f"scene_{index:03d}.mp4"
 
-    cmd = [
+    logger.info("  Scene %d: %s → %s (%d frames / %.1fs)",
+                index + 1, scene.template, comp_id, anim_frames, anim_frames / FPS)
+
+    base_cmd = [
         "npx", "remotion", "render",
-        comp_id,
+        *([ bundle_path, comp_id ] if bundle_path else [ comp_id ]),
         str(out_path),
         "--props", props_json,
         "--codec", "h264",
         "--crf", "18",
+        "--frames", f"0-{anim_frames - 1}",
+        "--scale", "0.667",
     ]
+    cmd = base_cmd
 
     result = subprocess.run(
         cmd,
@@ -217,39 +264,69 @@ def _render_remotion_scene(
         )
 
     render_time = time.monotonic() - t0
+    logger.info("  Scene %d done: %.1fs", index + 1, render_time)
 
     return SceneRenderResult(
         scene_index=index,
         mode="video",
         video_path=out_path,
-        hold_frame_path=None,  # Not needed — video is self-contained
+        hold_frame_path=None,
         render_time=render_time,
     )
 
 
 def _render_one(args: tuple) -> SceneRenderResult:
     """Worker function for parallel rendering."""
-    scene, index, output_dir = args
-    return _render_remotion_scene(scene, index, output_dir)
+    scene, index, output_dir, bundle_path = args
+    return _render_remotion_scene(scene, index, output_dir, bundle_path)
 
 
-def _warmup_remotion() -> None:
-    """Pre-bundle the Remotion project so first render doesn't timeout."""
-    bundle_marker = REMOTION_DIR / "node_modules" / ".cache" / ".remotion-bundled"
-    if bundle_marker.exists():
-        return
+_bundle_path: str | None = None
+
+
+def _ensure_bundle() -> str | None:
+    """Bundle the Remotion project once and return the bundle directory path.
+
+    Passing the bundle dir to `npx remotion render` skips per-render rebundling,
+    saving ~40-50s of startup overhead per scene.
+    """
+    global _bundle_path
+    if _bundle_path and Path(_bundle_path).exists():
+        logger.info("  Reusing Remotion bundle: %s", _bundle_path)
+        return _bundle_path
+
     try:
-        subprocess.run(
-            ["npx", "remotion", "bundle"],
+        logger.info("  Bundling Remotion project...")
+        t0 = time.monotonic()
+        result = subprocess.run(
+            ["npx", "remotion", "bundle", "--public-dir", str(REMOTION_DIR / "public")],
             cwd=str(REMOTION_DIR),
             capture_output=True,
             text=True,
             timeout=300,
         )
-        bundle_marker.parent.mkdir(parents=True, exist_ok=True)
-        bundle_marker.touch()
-    except Exception:
-        pass  # Non-fatal — first render will just be slower
+        if result.returncode != 0:
+            logger.warning("  ↳ Bundle failed: %s", result.stderr[:300])
+            return None
+
+        # Remotion prints the bundle path on the last non-empty line, prefixed with "○ "
+        for line in reversed(result.stdout.strip().splitlines()):
+            line = line.strip().lstrip("○ ").strip()
+            if line and Path(line).is_dir():
+                _bundle_path = line
+                break
+
+        if not _bundle_path:
+            # Default location
+            default = REMOTION_DIR / "build"
+            if default.is_dir():
+                _bundle_path = str(default)
+
+        logger.info("  ↳ Remotion bundle took %.1fs → %s", time.monotonic() - t0, _bundle_path)
+        return _bundle_path
+    except Exception as e:
+        logger.warning("  ↳ Remotion bundle failed (non-fatal): %s", e)
+        return None
 
 
 def render_scenes_remotion(
@@ -263,15 +340,15 @@ def render_scenes_remotion(
     """
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Pre-bundle to avoid timeout on first render
-    _warmup_remotion()
+    # Bundle once, reuse for all scene renders
+    bundle_path = _ensure_bundle()
 
     # Check which scenes have Remotion support
     tasks = []
     for i, scene in enumerate(scenes):
         tmpl = get_template(scene.template)
         if tmpl.has_remotion:
-            tasks.append((scene, i, output_dir))
+            tasks.append((scene, i, output_dir, bundle_path))
         else:
             # Will be handled by fallback below
             tasks.append(None)

@@ -1,8 +1,8 @@
 """Stage 2: Generate a scene plan from extracted paper content via Azure OpenAI.
 
-Plans each paper section independently with its own LLM call, then combines
-them into a single ScenePlan.  Each section's planned scenes are saved as
-separate JSON files in a `planned_outputs/` directory for inspection.
+Two modes:
+  - brief:    Single LLM call with full paper context → shorter, punchier video.
+  - detailed: Per-section parallel LLM calls → longer, comprehensive video.
 """
 
 from __future__ import annotations
@@ -58,6 +58,23 @@ class ScenePlan(BaseModel):
 
 SYSTEM_PROMPT = (Path(__file__).parent.parent / "prompts" / "planner_system.txt").read_text()
 
+FULL_PAPER_USER_TEMPLATE = """\
+# Paper: {title}
+Authors: {authors}
+
+## Abstract
+{abstract}
+
+## Full Paper Content
+{all_sections}
+
+{figures_block}
+{tables_block}
+
+Plan the COMPLETE video from title_card through closing_card in a single pass.
+Number scenes sequentially starting at 1.
+Return valid JSON with the scenes array."""
+
 SECTION_USER_TEMPLATE = """\
 # Paper: {title}
 Authors: {authors}
@@ -76,8 +93,28 @@ This is part {part_number} of {total_parts}.
 {figures_block}
 {tables_block}
 
-Plan scenes for ONLY the content above. Scene numbers should start at 1.
+Plan scenes for ONLY the content above. Be thorough — cover every key point, figure, and table.
+Scene numbers should start at 1.
 Return valid JSON with the scenes array."""
+
+REFINE_USER_TEMPLATE = """\
+Below is a draft scene plan for a video presentation of the paper "{title}".
+It was generated section-by-section, so there may be redundancy, repetition, or flow issues.
+
+Review the entire plan and return an IMPROVED version that:
+1. Removes redundant or repetitive scenes (if two scenes cover the same point, merge or cut one)
+2. Ensures smooth narrative flow — each scene should build on the previous one
+3. Keeps the title_card as scene 1 and closing_card as the last scene
+4. Fixes any awkward transitions between sections
+5. Preserves all important content — don't drop key findings, figures, or tables
+6. Strongly prefer keeping data_table and image_with_caption scenes — tables and figures contain unique quantitative results that viewers expect to see. Only remove one if it is truly redundant with another table/figure already in the plan.
+6. Keeps narrations conversational and non-repetitive across the whole video
+
+Return the full improved plan as valid JSON with the scenes array.
+Do NOT add markdown fences.
+
+## Current draft plan ({scene_count} scenes):
+{draft_json}"""
 
 TITLE_USER_TEMPLATE = """\
 # Paper: {title}
@@ -92,7 +129,6 @@ Return valid JSON with the scenes array."""
 
 # ── Section grouping ─────────────────────────────────────────────────────────
 
-# Patterns to assign sections to logical parts
 _PART_PATTERNS: list[tuple[str, re.Pattern]] = [
     ("abstract",      re.compile(r"(?i)^abstract$")),
     ("introduction",  re.compile(r"(?i)^\d*\.?\s*introduction")),
@@ -113,11 +149,7 @@ def _classify_section(heading: str) -> str:
 
 
 def _group_sections_into_parts(sections: list[dict]) -> list[dict]:
-    """Group consecutive sections into logical presentation parts.
-
-    Returns a list of dicts:
-        {label, slug, sections: [list of section dicts], fig_refs, table_refs}
-    """
+    """Group consecutive sections into logical presentation parts."""
     parts: list[dict] = []
     current_part: str = ""
     current_label: str = ""
@@ -146,15 +178,12 @@ def _group_sections_into_parts(sections: list[dict]) -> list[dict]:
         classified = _classify_section(heading)
 
         if classified and classified != current_part:
-            # New logical part
             _flush()
             current_part = classified
             current_label = classified.replace("_", " ").title()
         elif not classified and current_part:
-            # Continuation of current part (sub-section)
             pass
         elif not classified and not current_part:
-            # Unclassified section at start — give it a generic label
             if not current_sections:
                 current_part = f"section_{len(parts)+1}"
                 current_label = heading
@@ -167,15 +196,22 @@ def _group_sections_into_parts(sections: list[dict]) -> list[dict]:
 
 # ── Public API ───────────────────────────────────────────────────────────────
 
-def plan_scenes(paper: dict, output_dir: str | Path | None = None) -> ScenePlan:
-    """Plan video scenes section-by-section. Saves per-part JSONs to planned_outputs/.
+def plan_scenes(
+    paper: dict,
+    output_dir: str | Path | None = None,
+    mode: str = "brief",
+) -> ScenePlan:
+    """Plan video scenes.
 
     Args:
-        paper: Extraction dict from stage1 (title, authors, abstract, sections, tables, figures).
-        output_dir: Job output directory. If given, saves planned_outputs/ there.
+        paper: Extraction dict from stage1.
+        output_dir: Job output directory.
+        mode: "brief" (single LLM call) or "detailed" (per-section parallel calls).
 
-    Returns a combined ScenePlan.
+    Returns a ScenePlan.
     """
+    import time as _time
+
     client = AzureOpenAI(
         azure_endpoint=config.get("azure_openai_endpoint"),
         api_key=config.get("azure_openai_api_key"),
@@ -196,59 +232,28 @@ def plan_scenes(paper: dict, output_dir: str | Path | None = None) -> ScenePlan:
     for i, tbl in enumerate(paper.get("tables", [])):
         table_by_num[tbl.get("table_number", i + 1)] = {**tbl, "_index": i}
 
-    # Group sections into logical parts
-    parts = _group_sections_into_parts(paper.get("sections", []))
-
     # Setup output dir
     planned_dir = None
     if output_dir:
         planned_dir = Path(output_dir) / "planned_outputs"
         planned_dir.mkdir(parents=True, exist_ok=True)
 
-    # Build paper outline so each parallel call knows the full structure
-    paper_outline = "\n".join(
-        f"  {i+1}. {p['label']}" for i, p in enumerate(parts)
-    )
-
-    all_scenes: list[Scene] = []
-    logger.info("Planning %d parts + title card via %d parallel LLM calls", len(parts), len(parts) + 1)
-
-    # Plan title + all parts in parallel
-    with ThreadPoolExecutor(max_workers=len(parts) + 1) as pool:
-        title_future = pool.submit(
-            _plan_title, client, deployment, paper, 1
+    if mode == "detailed":
+        all_scenes = _plan_detailed(
+            client, deployment, paper, fig_by_num, table_by_num, image_map, planned_dir
         )
-        part_futures = [
-            pool.submit(
-                _plan_part, client, deployment, paper, part,
-                part_idx + 1, len(parts),
-                fig_by_num, table_by_num, image_map, 1, paper_outline,
-            )
-            for part_idx, part in enumerate(parts)
-        ]
-
-        # Collect title first
-        title_scenes = title_future.result()
-        all_scenes.extend(title_scenes)
-        if planned_dir:
-            _save_part(planned_dir, "00_title", title_scenes)
-
-        # Collect parts in order
-        for part_idx, fut in enumerate(part_futures):
-            part_scenes = fut.result()
-            all_scenes.extend(part_scenes)
-            if planned_dir:
-                slug = f"{part_idx + 1:02d}_{parts[part_idx]['slug']}"
-                _save_part(planned_dir, slug, part_scenes)
+    else:
+        all_scenes = _plan_brief(
+            client, deployment, paper, fig_by_num, table_by_num, image_map
+        )
 
     # Renumber scenes sequentially
     for i, scene in enumerate(all_scenes):
         scene.scene_number = i + 1
 
-    logger.info("Planned %d total scenes across %d parts", len(all_scenes), len(parts))
+    logger.info("Planned %d total scenes (mode=%s)", len(all_scenes), mode)
     plan = ScenePlan(scenes=all_scenes)
 
-    # Save combined plan
     if planned_dir:
         (planned_dir / "full_plan.json").write_text(
             json.dumps(plan.model_dump(), indent=2, default=str)
@@ -257,88 +262,217 @@ def plan_scenes(paper: dict, output_dir: str | Path | None = None) -> ScenePlan:
     return plan
 
 
-# ── Internal helpers ─────────────────────────────────────────────────────────
+# ── Brief mode (single call) ────────────────────────────────────────────────
 
-def _plan_title(
-    client: AzureOpenAI, deployment: str, paper: dict, scene_start: int
+def _plan_brief(
+    client, deployment, paper, fig_by_num, table_by_num, image_map,
 ) -> list[Scene]:
-    """Plan the title card scene."""
+    """Plan all scenes in a single LLM call."""
+    import time as _time
+
+    all_section_parts = []
+    for sec in paper.get("sections", []):
+        heading = sec.get("heading", "")
+        body = sec.get("body", "")[:2000]
+        refs = _build_refs(sec, fig_by_num, table_by_num)
+        ref_line = f"\n[References: {', '.join(refs)}]" if refs else ""
+        all_section_parts.append(f"### {heading}{ref_line}\n{body}")
+
+    figures_block = _build_figures_block(paper.get("figures", []))
+    tables_block = _build_tables_block(paper.get("tables", []))
+
+    prompt = FULL_PAPER_USER_TEMPLATE.format(
+        title=paper.get("title", "Untitled"),
+        authors=", ".join(paper.get("authors", [])),
+        abstract=paper.get("abstract", "")[:800],
+        all_sections="\n\n".join(all_section_parts),
+        figures_block=figures_block,
+        tables_block=tables_block,
+    )
+
+    logger.info("Planning (brief) — single LLM call (%d sections, %d figs, %d tables)",
+                len(paper.get("sections", [])), len(paper.get("figures", [])), len(paper.get("tables", [])))
+    _t0 = _time.monotonic()
+    scenes = _call_llm(client, deployment, prompt, image_map)
+    logger.info("  ↳ LLM call took %.1fs, returned %d scenes", _time.monotonic() - _t0, len(scenes))
+    return scenes
+
+
+# ── Detailed mode (per-section parallel calls) ──────────────────────────────
+
+def _plan_detailed(
+    client, deployment, paper, fig_by_num, table_by_num, image_map, planned_dir,
+) -> list[Scene]:
+    """Plan scenes per-section in parallel for comprehensive coverage."""
+    import time as _time
+
+    parts = _group_sections_into_parts(paper.get("sections", []))
+    paper_outline = "\n".join(f"  {i+1}. {p['label']}" for i, p in enumerate(parts))
+
+    logger.info("Planning (detailed) — %d parts + title via %d parallel LLM calls",
+                len(parts), len(parts) + 1)
+    _t0 = _time.monotonic()
+
+    all_scenes: list[Scene] = []
+
+    with ThreadPoolExecutor(max_workers=len(parts) + 1) as pool:
+        title_future = pool.submit(
+            _plan_title, client, deployment, paper, image_map
+        )
+        part_futures = [
+            pool.submit(
+                _plan_part, client, deployment, paper, part,
+                part_idx + 1, len(parts),
+                fig_by_num, table_by_num, image_map, paper_outline,
+            )
+            for part_idx, part in enumerate(parts)
+        ]
+
+        title_scenes = title_future.result()
+        all_scenes.extend(title_scenes)
+        if planned_dir:
+            _save_part(planned_dir, "00_title", title_scenes)
+
+        for part_idx, fut in enumerate(part_futures):
+            part_scenes = fut.result()
+            all_scenes.extend(part_scenes)
+            if planned_dir:
+                slug = f"{part_idx + 1:02d}_{parts[part_idx]['slug']}"
+                _save_part(planned_dir, slug, part_scenes)
+
+    logger.info("  ↳ Parallel calls took %.1fs, returned %d scenes", _time.monotonic() - _t0, len(all_scenes))
+
+    # Save pre-refinement plan
+    if planned_dir:
+        pre_refine = {"scenes": [s.model_dump() for s in all_scenes]}
+        (planned_dir / "pre_refine.json").write_text(json.dumps(pre_refine, indent=2, default=str))
+
+    # Refinement pass — single call to review the full plan for coherence
+    logger.info("  Refining plan for coherence and flow...")
+    _t1 = _time.monotonic()
+
+    draft_json = json.dumps(
+        {"scenes": [s.model_dump() for s in all_scenes]},
+        indent=2, default=str,
+    )
+    refine_prompt = REFINE_USER_TEMPLATE.format(
+        title=paper.get("title", "Untitled"),
+        scene_count=len(all_scenes),
+        draft_json=draft_json,
+    )
+
+    try:
+        refined_scenes = _call_llm(client, deployment, refine_prompt, image_map)
+        logger.info("  ↳ Refinement took %.1fs, %d → %d scenes",
+                    _time.monotonic() - _t1, len(all_scenes), len(refined_scenes))
+        # Reinsert any tables/figures the LLM dropped
+        final_scenes = _reinsert_dropped_scenes(all_scenes, refined_scenes)
+        if len(final_scenes) != len(refined_scenes):
+            logger.info("  ↳ Reinserted %d dropped data_table/image scenes → %d total",
+                        len(final_scenes) - len(refined_scenes), len(final_scenes))
+        return final_scenes
+    except Exception as e:
+        logger.warning("  ↳ Refinement failed (%s), using unrefined plan", e)
+        return all_scenes
+
+
+def _reinsert_dropped_scenes(
+    original: list[Scene], refined: list[Scene],
+) -> list[Scene]:
+    """Reinsert data_table and image_with_caption scenes that the refiner dropped.
+
+    Finds tables/images in the original that have no match in the refined plan
+    (by comparing template + a content fingerprint), then inserts them back
+    in a sensible position — right after the nearest section_header that
+    preceded them in the original plan.
+    """
+    PROTECTED = {"data_table", "image_with_caption"}
+
+    def _fingerprint(scene: Scene) -> str:
+        """Create a rough fingerprint to match scenes across plans."""
+        if scene.template == "data_table":
+            cols = scene.data.get("columns", [])
+            return f"data_table:{','.join(str(c) for c in cols[:4])}"
+        elif scene.template == "image_with_caption":
+            return f"image:{scene.data.get('image_path', scene.data.get('imageSrc', '?'))}"
+        return ""
+
+    # Fingerprints present in refined plan
+    refined_fps = {_fingerprint(s) for s in refined if s.template in PROTECTED}
+
+    # Find dropped scenes (skip image scenes with non-file paths like "table_0")
+    dropped: list[tuple[int, Scene]] = []  # (original_index, scene)
+    for i, s in enumerate(original):
+        if s.template in PROTECTED:
+            # Skip image scenes that reference table keys instead of real image files
+            if s.template == "image_with_caption":
+                img_path = s.data.get("image_path", s.data.get("imageSrc", ""))
+                if not img_path or not Path(str(img_path)).is_file():
+                    continue
+            fp = _fingerprint(s)
+            if fp and fp not in refined_fps:
+                dropped.append((i, s))
+
+    if not dropped:
+        return refined
+
+    # Build a map: for each dropped scene, find which section_header it followed
+    # in the original plan, then find that header (by narration match) in refined.
+    result = list(refined)
+
+    for orig_idx, dropped_scene in reversed(dropped):
+        # Find the section_header that preceded this scene in the original
+        preceding_header_narration = None
+        for j in range(orig_idx - 1, -1, -1):
+            if original[j].template == "section_header":
+                preceding_header_narration = original[j].narration
+                break
+
+        # Find that header in the refined plan
+        insert_pos = len(result) - 1  # default: before closing_card
+        if preceding_header_narration:
+            for k, rs in enumerate(result):
+                if rs.template == "section_header" and rs.narration == preceding_header_narration:
+                    # Insert after the last scene in this section (before next header or end)
+                    insert_pos = k + 1
+                    while insert_pos < len(result) and result[insert_pos].template not in ("section_header", "closing_card"):
+                        insert_pos += 1
+                    break
+
+        # Don't insert after closing_card
+        if insert_pos < len(result) and result[insert_pos].template == "closing_card":
+            pass  # insert right before it
+        result.insert(insert_pos, dropped_scene)
+
+    return result
+
+
+def _plan_title(client, deployment, paper, image_map) -> list[Scene]:
     prompt = TITLE_USER_TEMPLATE.format(
         title=paper.get("title", "Untitled"),
         authors=", ".join(paper.get("authors", [])),
         abstract=paper.get("abstract", "")[:500],
     )
-    return _call_llm(client, deployment, prompt, {}, scene_start)
+    return _call_llm(client, deployment, prompt, image_map)
 
 
 def _plan_part(
-    client: AzureOpenAI,
-    deployment: str,
-    paper: dict,
-    part: dict,
-    part_number: int,
-    total_parts: int,
-    fig_by_num: dict[int, dict],
-    table_by_num: dict[int, dict],
-    image_map: dict[str, str],
-    scene_start: int,
-    paper_outline: str = "",
+    client, deployment, paper, part,
+    part_number, total_parts,
+    fig_by_num, table_by_num, image_map, paper_outline,
 ) -> list[Scene]:
-    """Plan scenes for one logical part of the paper."""
-
-    # Build section content
     content_parts = []
     for sec in part["sections"]:
         heading = sec.get("heading", "")
         body = sec.get("body", "")[:2000]
-        refs = []
-        for fn in sec.get("fig_refs", []):
-            fig = fig_by_num.get(fn)
-            if fig:
-                refs.append(f'{fig["_key"]} (Figure {fn})')
-        for tn in sec.get("table_refs", []):
-            tbl = table_by_num.get(tn)
-            if tbl:
-                refs.append(f'table_{tbl["_index"]} (Table {tn})')
+        refs = _build_refs(sec, fig_by_num, table_by_num)
         ref_line = f"\n[References: {', '.join(refs)}]" if refs else ""
         content_parts.append(f"### {heading}{ref_line}\n{body}")
 
     section_content = "\n\n".join(content_parts)
+    figures_block = _build_figures_block_for_part(part, fig_by_num)
+    tables_block = _build_tables_block_for_part(part, table_by_num)
 
-    # Build figures block for referenced figures
-    figures_lines = []
-    for fn in part.get("fig_refs", []):
-        fig = fig_by_num.get(fn)
-        if fig:
-            key = fig["_key"]
-            caption = fig.get("caption", "")
-            desc = fig.get("description", "")
-            figures_lines.append(
-                f'- {key}: Figure {fn} — "{caption or desc}" (use image_path="{key}")'
-            )
-    figures_block = "## Figures referenced\n" + "\n".join(figures_lines) if figures_lines else ""
-
-    # Build tables block for referenced tables
-    tables_lines = []
-    for tn in part.get("table_refs", []):
-        tbl = table_by_num.get(tn)
-        if tbl:
-            idx = tbl["_index"]
-            cols = tbl.get("columns", [])
-            rows = tbl.get("rows", [])
-            caption = tbl.get("caption", f"Table {tn}")
-            tables_lines.append(f"### table_{idx}: {caption}")
-            tables_lines.append(f"  Columns: {json.dumps(cols)}")
-            for row in rows[:10]:
-                tables_lines.append(f"  Row: {json.dumps(row)}")
-            if len(rows) > 10:
-                tables_lines.append(f"  ... ({len(rows)} rows total)")
-    tables_block = (
-        "## Tables (each MUST get a `data_table` scene)\n" + "\n".join(tables_lines)
-        if tables_lines else ""
-    )
-
-    # Context note based on part position
     if part_number == 1:
         context_note = "This is the opening section. Start with a section_header."
     elif part_number == total_parts:
@@ -359,16 +493,93 @@ def _plan_part(
         tables_block=tables_block,
     )
 
-    scenes = _call_llm(client, deployment, prompt, image_map, scene_start)
-    return scenes
+    return _call_llm(client, deployment, prompt, image_map)
 
+
+def _save_part(planned_dir: Path, slug: str, scenes: list[Scene]) -> None:
+    data = {"scenes": [s.model_dump() for s in scenes]}
+    (planned_dir / f"{slug}.json").write_text(json.dumps(data, indent=2, default=str))
+
+
+# ── Shared helpers ───────────────────────────────────────────────────────────
+
+def _build_refs(sec, fig_by_num, table_by_num) -> list[str]:
+    refs = []
+    for fn in sec.get("fig_refs", []):
+        fig = fig_by_num.get(fn)
+        if fig:
+            refs.append(f'{fig["_key"]} (Figure {fn})')
+    for tn in sec.get("table_refs", []):
+        tbl = table_by_num.get(tn)
+        if tbl:
+            refs.append(f'table_{tbl["_index"]} (Table {tn})')
+    return refs
+
+
+def _build_figures_block(figures: list[dict]) -> str:
+    lines = []
+    for i, fig in enumerate(figures):
+        key = f"fig_{i}"
+        fig_num = fig.get("figure_number", i + 1)
+        caption = fig.get("caption", "")
+        desc = fig.get("description", "")
+        lines.append(f'- {key}: Figure {fig_num} — "{caption or desc}" (use image_path="{key}")')
+    return "## Available Figures\n" + "\n".join(lines) if lines else ""
+
+
+def _build_tables_block(tables: list[dict]) -> str:
+    lines = []
+    for i, tbl in enumerate(tables):
+        tbl_num = tbl.get("table_number", i + 1)
+        cols = tbl.get("columns", [])
+        rows = tbl.get("rows", [])
+        caption = tbl.get("caption", f"Table {tbl_num}")
+        lines.append(f"### table_{i}: {caption}")
+        lines.append(f"  Columns: {json.dumps(cols)}")
+        for row in rows[:10]:
+            lines.append(f"  Row: {json.dumps(row)}")
+        if len(rows) > 10:
+            lines.append(f"  ... ({len(rows)} rows total)")
+    return "## Tables (each MUST get a `data_table` scene)\n" + "\n".join(lines) if lines else ""
+
+
+def _build_figures_block_for_part(part, fig_by_num) -> str:
+    lines = []
+    for fn in part.get("fig_refs", []):
+        fig = fig_by_num.get(fn)
+        if fig:
+            key = fig["_key"]
+            caption = fig.get("caption", "")
+            desc = fig.get("description", "")
+            lines.append(f'- {key}: Figure {fn} — "{caption or desc}" (use image_path="{key}")')
+    return "## Figures referenced\n" + "\n".join(lines) if lines else ""
+
+
+def _build_tables_block_for_part(part, table_by_num) -> str:
+    lines = []
+    for tn in part.get("table_refs", []):
+        tbl = table_by_num.get(tn)
+        if tbl:
+            idx = tbl["_index"]
+            cols = tbl.get("columns", [])
+            rows = tbl.get("rows", [])
+            caption = tbl.get("caption", f"Table {tn}")
+            lines.append(f"### table_{idx}: {caption}")
+            lines.append(f"  Columns: {json.dumps(cols)}")
+            for row in rows[:10]:
+                lines.append(f"  Row: {json.dumps(row)}")
+            if len(rows) > 10:
+                lines.append(f"  ... ({len(rows)} rows total)")
+    return "## Tables (each MUST get a `data_table` scene)\n" + "\n".join(lines) if lines else ""
+
+
+# ── LLM call ────────────────────────────────────────────────────────────────
 
 def _call_llm(
     client: AzureOpenAI,
     deployment: str,
     user_prompt: str,
     image_map: dict[str, str],
-    scene_start: int,
 ) -> list[Scene]:
     """Send a planning request to the LLM and parse the response."""
     resp = client.chat.completions.create(
@@ -378,7 +589,7 @@ def _call_llm(
             {"role": "user", "content": user_prompt},
         ],
         temperature=0.7,
-        max_tokens=8192,
+        max_tokens=16384,
     )
 
     raw = resp.choices[0].message.content.strip()
@@ -407,13 +618,3 @@ def _call_llm(
                 scene.data["image_path"] = image_map[key]
 
     return plan.scenes
-
-
-def _save_part(planned_dir: Path, slug: str, scenes: list[Scene]) -> None:
-    """Save a part's scenes as a JSON file."""
-    data = {
-        "scenes": [s.model_dump() for s in scenes],
-    }
-    (planned_dir / f"{slug}.json").write_text(
-        json.dumps(data, indent=2, default=str)
-    )

@@ -346,8 +346,8 @@ export const BulletSlide: React.FC<BulletSlideProps> = ({ title, items }) => {
   });
 
   // === ACCENT LINE (top of card) ===
-  const accentLineDelay = Math.round(0.8 * fps);
-  const accentLineDuration = Math.round(0.8 * fps);
+  const accentLineDelay = Math.round(0.5 * fps);
+  const accentLineDuration = Math.round(0.5 * fps);
   const accentLineProgress = interpolate(
     frame,
     [accentLineDelay, accentLineDelay + accentLineDuration],
@@ -360,8 +360,8 @@ export const BulletSlide: React.FC<BulletSlideProps> = ({ title, items }) => {
   );
 
   // === TITLE ===
-  const titleDelay = Math.round(1.2 * fps);
-  const titleDuration = Math.round(0.6 * fps);
+  const titleDelay = Math.round(0.7 * fps);
+  const titleDuration = Math.round(0.45 * fps);
   const titleProgress = interpolate(
     frame,
     [titleDelay, titleDelay + titleDuration],
@@ -377,8 +377,8 @@ export const BulletSlide: React.FC<BulletSlideProps> = ({ title, items }) => {
   const titleBlurVal = interpolate(titleProgress, [0, 1], [6, 0]);
 
   // === DIVIDER under title ===
-  const dividerDelay = Math.round(1.6 * fps);
-  const dividerDuration = Math.round(0.8 * fps);
+  const dividerDelay = Math.round(1.0 * fps);
+  const dividerDuration = Math.round(0.5 * fps);
   const dividerProgress = interpolate(
     frame,
     [dividerDelay, dividerDelay + dividerDuration],
@@ -387,14 +387,10 @@ export const BulletSlide: React.FC<BulletSlideProps> = ({ title, items }) => {
   );
 
   // === BULLET ITEMS ===
-  // Spread items evenly across the scene after entrance, matching narration pace.
-  const bulletBaseDelay = Math.round(2.0 * fps);
-  const bulletExitBuffer = Math.round(0.5 * fps);
-  const bulletAvailable = durationInFrames - bulletBaseDelay - bulletExitBuffer;
-  const bulletStagger = items.length > 1
-    ? Math.round(bulletAvailable / items.length)
-    : Math.round(0.5 * fps);
-  const bulletDuration = Math.round(0.5 * fps);
+  // All items animate in together (same start time) so they all appear within the rendered frames.
+  const bulletBaseDelay = Math.round(1.2 * fps);
+  const bulletStagger = 0; // all in parallel
+  const bulletDuration = Math.round(0.4 * fps);
 
   // Content padding inside card
   const contentPadX = 100;
@@ -590,10 +586,7 @@ export const BulletSlide: React.FC<BulletSlideProps> = ({ title, items }) => {
                     easing: Easing.out(Easing.quad),
                   },
                 );
-                const nextItemStart = idx < items.length - 1
-                  ? bulletBaseDelay + (idx + 1) * bulletStagger
-                  : durationInFrames;
-                const isActive = frame >= itemStart && frame < nextItemStart;
+                const isActive = true; // all items visible together
                 return (
                   <BulletItemText
                     key={idx}
