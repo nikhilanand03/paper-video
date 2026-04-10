@@ -12,6 +12,7 @@ vi.mock('../lib/useAuth', () => ({
 // Mock Supabase video functions
 vi.mock('../lib/supabaseVideos', () => ({
   getLibraryFromSupabase: () => Promise.resolve([]),
+  syncLocalLibraryToSupabase: () => Promise.resolve(0),
 }));
 
 function renderLibrary() {

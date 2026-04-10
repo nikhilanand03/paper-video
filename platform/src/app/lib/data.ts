@@ -22,4 +22,5 @@ export {
   getLibraryFromSupabase,
   getVideoFromSupabase,
   getVideoByArxivIdFromSupabase,
+  syncLocalLibraryToSupabase,
 } from "./supabaseVideos";

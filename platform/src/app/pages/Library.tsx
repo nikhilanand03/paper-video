@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Search, Play } from "lucide-react";
 import { getLibrary, seedSampleItems } from "../lib/data";
-import { getLibraryFromSupabase } from "../lib/supabaseVideos";
+import { getLibraryFromSupabase, syncLocalLibraryToSupabase } from "../lib/supabaseVideos";
 import { useAuth } from "../lib/useAuth";
 import UserMenu from "../components/UserMenu";
 
@@ -26,32 +26,39 @@ export default function Library() {
   const [library, setLibrary] = useState<any[]>([]);
   const [libraryLoading, setLibraryLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function loadLibrary() {
-      setLibraryLoading(true);
-      seedSampleItems();
+  const loadLibrary = useCallback(async () => {
+    setLibraryLoading(true);
+    seedSampleItems();
+    const localLib = getLibrary();
 
-      if (user) {
-        try {
-          const cloudVideos = await getLibraryFromSupabase(user.id);
-          // Merge: cloud videos + local-only samples not already in cloud
-          const localLib = getLibrary();
-          const sampleVideos = localLib.filter((v: any) => v.isSample);
-          const cloudIds = new Set(cloudVideos.map((v: any) => v.id));
-          const extraSamples = sampleVideos.filter((v: any) => !cloudIds.has(v.id));
-          if (!cancelled) setLibrary([...cloudVideos, ...extraSamples]);
-        } catch {
-          if (!cancelled) setLibrary(getLibrary());
-        }
-      } else {
-        if (!cancelled) setLibrary(getLibrary());
+    if (user) {
+      try {
+        // Push any local-only videos to Supabase (handles migration + logged-out-then-in)
+        await syncLocalLibraryToSupabase(user.id, localLib);
+        const cloudVideos = await getLibraryFromSupabase(user.id);
+        // Merge: cloud videos + local-only samples not already in cloud
+        const sampleVideos = localLib.filter((v: any) => v.isSample);
+        const cloudIds = new Set(cloudVideos.map((v: any) => v.id));
+        const extraSamples = sampleVideos.filter((v: any) => !cloudIds.has(v.id));
+        setLibrary([...cloudVideos, ...extraSamples]);
+      } catch {
+        setLibrary(localLib);
       }
-      if (!cancelled) setLibraryLoading(false);
+    } else {
+      setLibrary(localLib);
     }
-    loadLibrary();
-    return () => { cancelled = true; };
+    setLibraryLoading(false);
   }, [user]);
+
+  // Load on mount and when auth changes
+  useEffect(() => { loadLibrary(); }, [loadLibrary]);
+
+  // Re-fetch when window regains focus (covers multi-tab and returning from background)
+  useEffect(() => {
+    const onFocus = () => loadLibrary();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [loadLibrary]);
 
   // Filter and sort by most recent
   const filteredVideos = library

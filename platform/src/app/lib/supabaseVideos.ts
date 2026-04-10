@@ -103,6 +103,42 @@ export async function getVideoFromSupabase(
   return mapRow(data);
 }
 
+/** Sync localStorage videos to Supabase (handles migration + logged-out-then-in). */
+export async function syncLocalLibraryToSupabase(
+  userId: string,
+  localLibrary: any[]
+): Promise<number> {
+  // Only sync real videos (not samples) that have a realJobId
+  const candidates = localLibrary.filter(
+    (v: any) => v.realJobId && !v.isSample
+  );
+  if (candidates.length === 0) return 0;
+
+  let synced = 0;
+  for (const v of candidates) {
+    try {
+      await saveVideoToSupabase(userId, v.realJobId, {
+        title: v.title ?? 'Untitled',
+        authors: v.authors,
+        venue: v.venue,
+        year: v.year,
+        url: v.url,
+        arxiv_id: v.arxivId,
+        abstract: v.abstract,
+        sections: v.sections,
+        scenes: v.scenes,
+        duration: v.duration,
+        blob_url: v.blobUrl ?? null,
+        generated_at: v.generatedAt,
+      });
+      synced++;
+    } catch {
+      // Skip individual failures (likely duplicates)
+    }
+  }
+  return synced;
+}
+
 /** Get a single video by arxiv ID. */
 export async function getVideoByArxivIdFromSupabase(
   userId: string,

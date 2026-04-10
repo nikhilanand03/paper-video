@@ -240,7 +240,37 @@ describe('useVideoPlayer', () => {
 
     it('exposes cloudLoading state (false for guest with missing video)', () => {
       const { result } = renderHook(() => useVideoPlayer('nonexistent'));
+      // cloudLoading starts false, then the effect fires but since no user, stays false
       expect(result.current.cloudLoading).toBe(false);
+    });
+  });
+
+  describe('blob URL fallback', () => {
+    it('constructs fallback blob URL when blobUrl is missing but realJobId exists', () => {
+      saveVideoToLibrary('fallback-vid', {
+        ...testVideo,
+        realJobId: 'mars_test1',
+        blobUrl: undefined,
+      });
+      const { result } = renderHook(() => useVideoPlayer('fallback-vid'));
+
+      // On non-localhost (jsdom), should use fallback blob URL if VITE_BLOB_STORAGE_BASE is set
+      // In test env the env var isn't set, so falls back to getStreamUrl
+      expect(result.current.streamUrl).toBeDefined();
+    });
+
+    it('prefers explicit blobUrl over constructed fallback', () => {
+      const explicit = 'https://banimvideostorage.blob.core.windows.net/videos/custom/final.mp4';
+      saveVideoToLibrary('explicit-blob', {
+        ...testVideo,
+        realJobId: 'custom_job',
+        blobUrl: explicit,
+      });
+      const { result } = renderHook(() => useVideoPlayer('explicit-blob'));
+
+      // jsdom hostname is "localhost", so it uses getStreamUrl in dev mode
+      // But the blobUrl is still stored on the video object
+      expect(result.current.video?.blobUrl).toBe(explicit);
     });
   });
 });

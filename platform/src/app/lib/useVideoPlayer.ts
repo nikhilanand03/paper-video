@@ -74,25 +74,45 @@ export function useVideoPlayer(videoId?: string, arxivId?: string) {
     }
   }
 
-  // Cross-device fallback: if not found locally, try Supabase
+  // Cross-device fallback: if not found locally, try Supabase then construct blob URL
+  const blobBase = import.meta.env.VITE_BLOB_STORAGE_BASE as string | undefined;
   useEffect(() => {
-    if (localVideo || cloudVideo || !user) return;
+    if (localVideo || cloudVideo) return;
     setCloudLoading(true);
     (async () => {
       try {
-        const found = arxivId
-          ? await getVideoByArxivIdFromSupabase(user.id, arxivId)
-          : videoId
-            ? await getVideoFromSupabase(user.id, videoId)
-            : null;
-        if (found) setCloudVideo(found);
+        // Try Supabase first (if logged in)
+        if (user) {
+          const found = arxivId
+            ? await getVideoByArxivIdFromSupabase(user.id, arxivId)
+            : videoId
+              ? await getVideoFromSupabase(user.id, videoId)
+              : null;
+          if (found) { setCloudVideo(found); return; }
+        }
+        // Shared link fallback: construct minimal video from blob URL
+        // so /v/{jobId} links work even for users who don't own the video
+        const targetId = videoId;
+        if (targetId && blobBase) {
+          setCloudVideo({
+            id: targetId,
+            title: 'Shared Video',
+            authors: [],
+            scenes: [],
+            duration: 0,
+            realJobId: targetId,
+            blobUrl: `${blobBase}/${targetId}/final.mp4`,
+            generatedAt: new Date().toISOString(),
+            views: 0,
+          });
+        }
       } catch {
-        // Supabase unreachable — stay with local-only
+        // All lookups failed — stay with nothing
       } finally {
         setCloudLoading(false);
       }
     })();
-  }, [localVideo, cloudVideo, user, videoId, arxivId]);
+  }, [localVideo, cloudVideo, user, videoId, arxivId, blobBase]);
 
   const video = localVideo || cloudVideo;
   const resolvedVideoId = video?.id || videoId;
@@ -147,9 +167,13 @@ export function useVideoPlayer(videoId?: string, arxivId?: string) {
   // On localhost, use backend /stream (supports Range requests for seeking).
   // On production (Vercel etc.), go straight to blobUrl — no backend available.
   const isLocalDev = typeof window !== "undefined" && window.location.hostname === "localhost";
+  // Construct blob URL from base when blobUrl is missing but we know the job ID
+  const fallbackBlobUrl = !video?.blobUrl && video?.realJobId && blobBase
+    ? `${blobBase}/${video.realJobId}/final.mp4`
+    : null;
   const streamUrl = isLocalDev && video?.realJobId
     ? getStreamUrl(video.realJobId)
-    : video?.blobUrl || (video?.realJobId ? getStreamUrl(video.realJobId) : null);
+    : video?.blobUrl || fallbackBlobUrl || (video?.realJobId ? getStreamUrl(video.realJobId) : null);
 
   const useRealChapters = chapters && chapters.length === activeScenes.length;
   const totalSceneDuration = useRealChapters
