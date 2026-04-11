@@ -8,7 +8,7 @@ const STAGE_LABELS = ["Extracting", "Planning", "Rendering", "TTS", "Assembling"
 export default function JobBanner() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { activeJobs, completedJob, clearCompleted } = useJobs();
+  const { activeJobs, removeJob, completedJob, clearCompleted } = useJobs();
 
   // Don't show banner if user is already on the processing page for this job
   const currentJobId = location.pathname.match(/^\/video\/(.+)/)?.[1];
