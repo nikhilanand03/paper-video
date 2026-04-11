@@ -16,6 +16,49 @@ def test_status_existing_job(client, seeded_job):
     assert body["scenes_done"] == 1
 
 
+def test_status_returns_blob_url_from_memory(client, seeded_job):
+    """GET status returns blob_url when present in the in-memory job dict."""
+    import pipeline
+
+    job = pipeline.get_job(seeded_job["job_id"])
+    job["blob_url"] = "https://banimvideostorage.blob.core.windows.net/videos/testjob1/final.mp4"
+
+    resp = client.get(f"/status/{seeded_job['job_id']}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["blob_url"] == "https://banimvideostorage.blob.core.windows.net/videos/testjob1/final.mp4"
+
+
+def test_status_returns_null_blob_url_when_absent(client, seeded_job):
+    """GET status returns null blob_url when no Azure upload happened."""
+    resp = client.get(f"/status/{seeded_job['job_id']}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["blob_url"] is None
+
+
+def test_status_returns_blob_url_from_disk(client, tmp_output):
+    """Persisted job.json with blob_url is returned via the disk fallback."""
+    job_id = "blob_disk1"
+    job_dir = tmp_output["output"] / job_id
+    job_dir.mkdir()
+
+    data = {
+        "pdf_path": "/some/path.pdf",
+        "status": "done",
+        "error": None,
+        "scenes_total": 5,
+        "scenes_done": 5,
+        "blob_url": "https://banimvideostorage.blob.core.windows.net/videos/blob_disk1/final.mp4",
+    }
+    (job_dir / "job.json").write_text(json.dumps(data))
+
+    resp = client.get(f"/status/{job_id}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["blob_url"] == "https://banimvideostorage.blob.core.windows.net/videos/blob_disk1/final.mp4"
+
+
 def test_status_not_found(client):
     """GET status for a nonexistent job returns 404."""
     resp = client.get("/status/nonexistent_job_xyz")

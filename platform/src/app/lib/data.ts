@@ -5,6 +5,7 @@ export { examplePapers, mockPaperData } from "./samples";
 export { templateTypes, templateInfo, processingStages } from "./templates";
 export type { TemplateType } from "./templates";
 export {
+  extractArxivId,
   getOrCreateVideoId,
   saveVideoToLibrary,
   getLibrary,
@@ -16,3 +17,10 @@ export {
   deleteNote,
   seedSampleItems,
 } from "./storage";
+export {
+  saveVideoToSupabase,
+  getLibraryFromSupabase,
+  getVideoFromSupabase,
+  getVideoByArxivIdFromSupabase,
+  syncLocalLibraryToSupabase,
+} from "./supabaseVideos";

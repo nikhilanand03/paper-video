@@ -17,6 +17,13 @@ export default function Viewer() {
   const p = useVideoPlayer(videoId, arxivId);
 
   if (!p.video) {
+    if (p.cloudLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#FAFAF8" }}>
+          <p style={{ color: "#6B7280" }}>Loading video...</p>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#FAFAF8" }}>
         <div className="text-center">

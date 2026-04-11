@@ -92,6 +92,7 @@ async def job_status(job_id: str):
                         "error": data.get("error"),
                         "scenes_total": data.get("scenes_total", 0),
                         "scenes_done": data.get("scenes_done", 0),
+                        "blob_url": data.get("blob_url"),
                     }
             # Legacy fallback for old jobs without persisted status
             final = job_dir / "final.mp4"
@@ -105,6 +106,7 @@ async def job_status(job_id: str):
                 "error": None,
                 "scenes_total": scenes_total,
                 "scenes_done": scenes_total if final.exists() else 0,
+                "blob_url": None,
             }
         raise HTTPException(404, "Job not found.")
 
@@ -113,6 +115,7 @@ async def job_status(job_id: str):
         "error": job["error"],
         "scenes_total": job["scenes_total"],
         "scenes_done": job["scenes_done"],
+        "blob_url": job.get("blob_url"),
     }
 
 

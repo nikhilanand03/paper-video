@@ -150,6 +150,7 @@ def _persist_status(job: dict, job_dir: Path) -> None:
         "error": job.get("error"),
         "scenes_total": job.get("scenes_total", 0),
         "scenes_done": job.get("scenes_done", 0),
+        "blob_url": job.get("blob_url"),
     }
     (job_dir / "job.json").write_text(json.dumps(data, indent=2))
 

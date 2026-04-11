@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
+  extractArxivId,
   getOrCreateVideoId,
   saveVideoToLibrary,
   getLibrary,
   getVideoById,
+  getVideoByArxivId,
   incrementViewCount,
   saveNote,
   getNotes,
@@ -12,6 +14,52 @@ import {
   templateInfo,
   templateTypes,
 } from './data';
+
+describe('extractArxivId', () => {
+  it('extracts ID from arxiv abs URL', () => {
+    expect(extractArxivId('https://arxiv.org/abs/1706.03762')).toBe('1706.03762');
+  });
+
+  it('extracts ID from arxiv pdf URL', () => {
+    expect(extractArxivId('https://arxiv.org/pdf/2301.12345')).toBe('2301.12345');
+  });
+
+  it('returns null for non-arxiv URLs', () => {
+    expect(extractArxivId('https://example.com/paper')).toBeNull();
+  });
+
+  it('returns null for undefined input', () => {
+    expect(extractArxivId(undefined)).toBeNull();
+  });
+});
+
+describe('saveVideoToLibrary preserves blobUrl', () => {
+  it('round-trips blobUrl through save and retrieve', () => {
+    const blobUrl = 'https://banimvideostorage.blob.core.windows.net/videos/job1/final.mp4';
+    saveVideoToLibrary('blob-test', {
+      title: 'Blob Test',
+      authors: [],
+      blobUrl,
+      realJobId: 'job1',
+    });
+
+    const video = getVideoById('blob-test');
+    expect(video.blobUrl).toBe(blobUrl);
+    expect(video.realJobId).toBe('job1');
+  });
+
+  it('auto-extracts arxivId from URL', () => {
+    saveVideoToLibrary('arxiv-test', {
+      title: 'Arxiv Test',
+      authors: [],
+      url: 'https://arxiv.org/abs/2301.99999',
+    });
+
+    const video = getVideoByArxivId('2301.99999');
+    expect(video).toBeDefined();
+    expect(video.title).toBe('Arxiv Test');
+  });
+});
 
 describe('getOrCreateVideoId', () => {
   it('returns a consistent ID for the same paperId', () => {

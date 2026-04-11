@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Search, Play } from "lucide-react";
 import { getLibrary, seedSampleItems } from "../lib/data";
+import { getLibraryFromSupabase, syncLocalLibraryToSupabase } from "../lib/supabaseVideos";
 import { useAuth } from "../lib/useAuth";
 import UserMenu from "../components/UserMenu";
 
@@ -22,9 +23,42 @@ export default function Library() {
   const navigate = useNavigate();
   const { user, signInWithGoogle, signOut } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [library, setLibrary] = useState<any[]>([]);
+  const [libraryLoading, setLibraryLoading] = useState(true);
 
-  seedSampleItems();
-  const library = getLibrary();
+  const loadLibrary = useCallback(async () => {
+    setLibraryLoading(true);
+    seedSampleItems();
+    const localLib = getLibrary();
+
+    if (user) {
+      try {
+        // Push any local-only videos to Supabase (handles migration + logged-out-then-in)
+        await syncLocalLibraryToSupabase(user.id, localLib);
+        const cloudVideos = await getLibraryFromSupabase(user.id);
+        // Merge: cloud videos + local-only samples not already in cloud
+        const sampleVideos = localLib.filter((v: any) => v.isSample);
+        const cloudIds = new Set(cloudVideos.map((v: any) => v.id));
+        const extraSamples = sampleVideos.filter((v: any) => !cloudIds.has(v.id));
+        setLibrary([...cloudVideos, ...extraSamples]);
+      } catch {
+        setLibrary(localLib);
+      }
+    } else {
+      setLibrary(localLib);
+    }
+    setLibraryLoading(false);
+  }, [user]);
+
+  // Load on mount and when auth changes
+  useEffect(() => { loadLibrary(); }, [loadLibrary]);
+
+  // Re-fetch when window regains focus (covers multi-tab and returning from background)
+  useEffect(() => {
+    const onFocus = () => loadLibrary();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [loadLibrary]);
 
   // Filter and sort by most recent
   const filteredVideos = library
@@ -156,7 +190,7 @@ export default function Library() {
               margin: "6px 0 0 0",
             }}
           >
-            Saved locally in this browser
+            {user ? "Synced across your devices" : "Saved locally in this browser"}
           </p>
         </div>
 

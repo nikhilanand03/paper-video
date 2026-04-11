@@ -20,6 +20,7 @@ export interface JobStatus {
   error: string | null;
   scenes_total: number;
   scenes_done: number;
+  blob_url?: string | null;
 }
 
 export interface JobData {

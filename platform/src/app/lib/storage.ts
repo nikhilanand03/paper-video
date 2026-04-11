@@ -6,7 +6,7 @@ function generateId(): string {
   return Math.random().toString(36).substring(2, 11);
 }
 
-function extractArxivId(url?: string): string | null {
+export function extractArxivId(url?: string): string | null {
   if (!url) return null;
   const match = url.match(/arxiv\.org\/(?:abs|pdf)\/(\d+\.\d+)/);
   return match ? match[1] : null;

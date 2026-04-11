@@ -1,8 +1,19 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import Library from './Library';
 import { saveVideoToLibrary } from '../lib/data';
+
+// Mock auth — guest by default
+vi.mock('../lib/useAuth', () => ({
+  useAuth: () => ({ user: null, loading: false, signInWithGoogle: vi.fn(), signOut: vi.fn() }),
+}));
+
+// Mock Supabase video functions
+vi.mock('../lib/supabaseVideos', () => ({
+  getLibraryFromSupabase: () => Promise.resolve([]),
+  syncLocalLibraryToSupabase: () => Promise.resolve(0),
+}));
 
 function renderLibrary() {
   return render(

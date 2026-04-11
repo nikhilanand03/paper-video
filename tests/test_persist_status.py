@@ -63,6 +63,37 @@ class TestPersistStatus:
         assert data["status"] == "failed"
         assert data["error"] == "Reducto API timeout after 120s"
 
+    def test_writes_blob_url(self, tmp_output, mock_pdf):
+        """_persist_status includes blob_url when present in job dict."""
+        import pipeline
+        from pipeline.orchestrator import _persist_status, Status
+
+        job_id = pipeline.create_job(mock_pdf)
+        job = pipeline.get_job(job_id)
+        job["status"] = Status.DONE
+        job["blob_url"] = "https://banimvideostorage.blob.core.windows.net/videos/test/final.mp4"
+
+        job_dir = Path(job["job_dir"])
+        _persist_status(job, job_dir)
+
+        data = json.loads((job_dir / "job.json").read_text())
+        assert data["blob_url"] == "https://banimvideostorage.blob.core.windows.net/videos/test/final.mp4"
+
+    def test_writes_null_blob_url_when_absent(self, tmp_output, mock_pdf):
+        """_persist_status writes null blob_url when no Azure upload happened."""
+        import pipeline
+        from pipeline.orchestrator import _persist_status, Status
+
+        job_id = pipeline.create_job(mock_pdf)
+        job = pipeline.get_job(job_id)
+        job["status"] = Status.RENDERING
+
+        job_dir = Path(job["job_dir"])
+        _persist_status(job, job_dir)
+
+        data = json.loads((job_dir / "job.json").read_text())
+        assert data["blob_url"] is None
+
     def test_preserves_pdf_path(self, tmp_output, mock_pdf):
         """_persist_status keeps pdf_path from the original job dict."""
         import pipeline
