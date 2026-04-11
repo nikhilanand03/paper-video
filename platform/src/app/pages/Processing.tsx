@@ -499,23 +499,24 @@ export default function Processing() {
   const displayPaper = isExample ? knownPaper : paperInfo;
 
   // Compute the active stage label and overall progress percentage
+  // Weighted: extract=10%, plan=15%, render=50%, tts=10%, assemble=15%
+  const STAGE_WEIGHTS = [10, 15, 50, 10, 15];
   const activeStage = processingStages[currentStage];
-  const totalStages = processingStages.length;
   let progressPercent = 0;
   if (completedTime !== null) {
     progressPercent = 100;
-  } else if (currentStage >= totalStages) {
+  } else if (currentStage >= processingStages.length) {
     progressPercent = 100;
   } else {
-    // Base progress from completed stages
-    const baseProgress = (currentStage / totalStages) * 100;
-    // Add partial progress within the rendering stage using scene counts
+    // Sum weights of completed stages
+    let completed = 0;
+    for (let i = 0; i < currentStage; i++) completed += STAGE_WEIGHTS[i] || 0;
+    // Add partial progress within current stage
+    const currentWeight = STAGE_WEIGHTS[currentStage] || 0;
     if (activeStage?.id === "rendering" && scenesTotal > 0) {
-      const stageSlice = 100 / totalStages;
-      progressPercent = Math.round(baseProgress + (scenesDone / scenesTotal) * stageSlice);
-    } else {
-      progressPercent = Math.round(baseProgress);
+      completed += (scenesDone / scenesTotal) * currentWeight;
     }
+    progressPercent = Math.round(completed);
   }
 
   // Track when each stage starts for countdown
@@ -1100,7 +1101,7 @@ export default function Processing() {
           <span style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "#9CA3AF" }}>
             Bored?{" "}
             <a
-              href="https://medium.com/@nikhilanand03"
+              href="https://medium.com/@nikhilanandnj"
               target="_blank"
               rel="noopener noreferrer"
               style={{ color: "#2563EB", textDecoration: "none" }}
