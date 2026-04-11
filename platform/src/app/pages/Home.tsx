@@ -17,6 +17,7 @@ export default function Home() {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<"brief" | "detailed">("brief");
+  const [showSignInPrompt, setShowSignInPrompt] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = (e: React.DragEvent) => {

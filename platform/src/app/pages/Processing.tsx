@@ -172,6 +172,7 @@ export default function Processing() {
   const [pipelineError, setPipelineError] = useState<string | null>(null);
   const [isQueued, setIsQueued] = useState(false);
   const [queueAhead, setQueueAhead] = useState(0);
+  const [showSignIn, setShowSignIn] = useState(false);
   const [scenesDone, setScenesDone] = useState(0);
   const [scenesTotal, setScenesTotal] = useState(0);
   const pollingRef = useRef<ReturnType<typeof setInterval>>();
@@ -180,12 +181,32 @@ export default function Processing() {
   const elapsedTimeRef = useRef(0);
   const pollFailCountRef = useRef(0);
   const paperInfoFetchedRef = useRef(false);
+  const pendingSupabaseSaveRef = useRef<{ meta: any; blobUrl: string | null } | null>(null);
   const scenePlanFetchedRef = useRef(false);
 
   const knownPaper = isExample ? mockPaperData[paperId!] : null;
 
   // ── Real backend polling (non-demo, non-example uploads) ──
   const useRealBackend = !isDemo && !isExample && !!jobId;
+
+  // Save to Supabase when user signs in after video is done
+  useEffect(() => {
+    if (user && pendingSupabaseSaveRef.current && jobId) {
+      const { meta, blobUrl } = pendingSupabaseSaveRef.current;
+      pendingSupabaseSaveRef.current = null;
+      saveVideoToSupabase(user.id, jobId, {
+        ...meta,
+        arxiv_id: extractArxivId(uploadUrl),
+        blob_url: blobUrl,
+      }).then(() => {
+        console.log(`[Pipeline ${jobId}] Saved to Supabase after sign-in`);
+        navigate(`/v/${jobId}`);
+      }).catch((e) => {
+        console.warn("Supabase save after sign-in failed:", e);
+        navigate(`/v/${jobId}`);
+      });
+    }
+  }, [user]);
 
   // Register job in context so banner can track it
   useEffect(() => {
@@ -340,12 +361,19 @@ export default function Processing() {
                 blob_url: status.blob_url || null,
               });
             } catch (e) {
-              console.warn("Supabase save failed (localStorage fallback used):", e);
+              console.warn("Supabase save failed:", e);
             }
+          } else if (videoMeta) {
+            // User not signed in — save for later when they sign in
+            pendingSupabaseSaveRef.current = { meta: videoMeta, blobUrl: status.blob_url || null };
           }
           setCompletedTime(elapsedTimeRef.current);
           removeJob(jobId!);
-          setTimeout(() => navigate(`/v/${jobId}`), 2000);
+          if (user) {
+            setTimeout(() => navigate(`/v/${jobId}`), 2000);
+          } else {
+            setShowSignIn(true);
+          }
         }
 
         // Failed
@@ -607,7 +635,9 @@ export default function Processing() {
             margin: 0,
           }}
         >
-          {completedTime !== null
+          {showSignIn
+            ? "Your video is ready!"
+            : completedTime !== null
             ? "Your video is ready"
             : isQueued
             ? "You're in the queue"
@@ -638,6 +668,31 @@ export default function Processing() {
           </p>
         )}
       </div>
+
+      {/* ── Sign in prompt ── */}
+      {showSignIn && (
+        <div style={{ padding: "32px 240px", textAlign: "center" }}>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 15, color: "#6B7280", lineHeight: 1.6, marginBottom: 20 }}>
+            Sign in to save this video to your library and access it anytime.
+          </p>
+          <button
+            onClick={signInWithGoogle}
+            style={{
+              padding: "10px 24px",
+              backgroundColor: "#2563EB",
+              color: "#FFFFFF",
+              border: "none",
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 500,
+              cursor: "pointer",
+              fontFamily: "Inter, sans-serif",
+            }}
+          >
+            Sign in with Google
+          </button>
+        </div>
+      )}
 
       {/* ── Backend mode indicator ── */}
       {useRealBackend && (
