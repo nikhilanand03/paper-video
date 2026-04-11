@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { getActiveJobs, getJobStatus, type JobStatus } from "./api";
+import { useAuth } from "./useAuth";
 
 interface ActiveJob {
   jobId: string;
@@ -32,13 +33,34 @@ export function useJobs() {
 export function JobProvider({ children }: { children: React.ReactNode }) {
   const [activeJobs, setActiveJobs] = useState<ActiveJob[]>([]);
   const [completedJob, setCompletedJob] = useState<ActiveJob | null>(null);
-  // Track paper names locally (backend doesn't know them)
+  const { user } = useAuth();
   const paperNamesRef = useRef<Record<string, string>>({});
   const pollRef = useRef<ReturnType<typeof setInterval>>();
   const initializedRef = useRef(false);
 
-  // Jobs are only tracked via addJob() — no global recovery from /active-jobs
-  // This ensures users only see their own jobs, not other users'
+  // Recover own jobs from backend after tab close/refresh (filtered by email)
+  useEffect(() => {
+    if (initializedRef.current || !user?.email) return;
+    initializedRef.current = true;
+
+    getActiveJobs(user.email).then((backendJobs) => {
+      if (backendJobs.length > 0) {
+        setActiveJobs((prev) => {
+          const existingIds = new Set(prev.map((j) => j.jobId));
+          const newJobs = backendJobs
+            .filter((j) => !existingIds.has(j.job_id))
+            .map((j) => ({
+              jobId: j.job_id,
+              paperName: paperNamesRef.current[j.job_id] || "Paper",
+              status: j.status,
+              scenesTotal: j.scenes_total,
+              scenesDone: j.scenes_done,
+            }));
+          return [...prev, ...newJobs];
+        });
+      }
+    });
+  }, [user]);
 
   const addJob = useCallback((jobId: string, paperName: string) => {
     paperNamesRef.current[jobId] = paperName;

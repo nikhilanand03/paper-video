@@ -67,10 +67,11 @@ export async function uploadPdf(file: File, mode: "brief" | "detailed" = "brief"
   return data.job_id;
 }
 
-/** Fetch all in-progress jobs from the backend. */
-export async function getActiveJobs(): Promise<{ job_id: string; status: JobStatus["status"]; scenes_total: number; scenes_done: number }[]> {
+/** Fetch in-progress jobs from the backend, filtered by user email. */
+export async function getActiveJobs(userEmail?: string): Promise<{ job_id: string; status: JobStatus["status"]; scenes_total: number; scenes_done: number }[]> {
   try {
-    const res = await fetch(`${API_BASE}/active-jobs`);
+    const params = userEmail ? `?user_email=${encodeURIComponent(userEmail)}` : "";
+    const res = await fetch(`${API_BASE}/active-jobs${params}`);
     if (!res.ok) return [];
     return res.json();
   } catch {
