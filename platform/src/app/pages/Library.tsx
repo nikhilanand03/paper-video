@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router";
 import { useState, useEffect, useCallback } from "react";
-import { Search, Play } from "lucide-react";
+import { Search, Play, Loader2 } from "lucide-react";
 import { seedSampleItems } from "../lib/data";
 import { examplePapers, mockPaperData } from "../lib/data";
 import { getLibraryFromSupabase } from "../lib/supabaseVideos";
@@ -246,8 +246,15 @@ export default function Library() {
         </div>
       </div>
 
+      {/* Loading state */}
+      {libraryLoading && (
+        <div className="flex items-center justify-center" style={{ padding: "96px 80px" }}>
+          <Loader2 size={28} color="#2563EB" className="animate-spin" />
+        </div>
+      )}
+
       {/* Empty state */}
-      {filteredVideos.length === 0 && !searchQuery && (
+      {!libraryLoading && filteredVideos.length === 0 && !searchQuery && (
         <div className="text-center" style={{ padding: "96px 80px" }}>
           <div
             className="flex items-center justify-center mx-auto"
@@ -302,7 +309,7 @@ export default function Library() {
       )}
 
       {/* No search results */}
-      {filteredVideos.length === 0 && searchQuery && (
+      {!libraryLoading && filteredVideos.length === 0 && searchQuery && (
         <div className="text-center" style={{ padding: "96px 80px" }}>
           <p
             style={{
@@ -317,7 +324,7 @@ export default function Library() {
       )}
 
       {/* Video cards */}
-      {filteredVideos.length > 0 && (
+      {!libraryLoading && filteredVideos.length > 0 && (
         <div
           className="flex flex-wrap"
           style={{ padding: "32px 80px", gap: 24 }}
@@ -358,14 +365,14 @@ export default function Library() {
                   background: (() => {
                     // Rotate through warm, inviting gradients based on video index
                     const gradients = [
-                      "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                      "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-                      "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-                      "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
-                      "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
-                      "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)",
-                      "linear-gradient(135deg, #fccb90 0%, #d57eeb 100%)",
-                      "linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)",
+                      "linear-gradient(135deg, #4338ca 0%, #5b21b6 100%)",
+                      "linear-gradient(135deg, #be185d 0%, #9f1239 100%)",
+                      "linear-gradient(135deg, #1d4ed8 0%, #0e7490 100%)",
+                      "linear-gradient(135deg, #15803d 0%, #0f766e 100%)",
+                      "linear-gradient(135deg, #b91c1c 0%, #c2410c 100%)",
+                      "linear-gradient(135deg, #6d28d9 0%, #7e22ce 100%)",
+                      "linear-gradient(135deg, #c2410c 0%, #7c3aed 100%)",
+                      "linear-gradient(135deg, #0369a1 0%, #4338ca 100%)",
                     ];
                     // Use title length as a simple hash for consistent color per video
                     const idx = (video.title?.length || 0) % gradients.length;

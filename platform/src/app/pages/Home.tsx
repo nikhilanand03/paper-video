@@ -350,9 +350,9 @@ export default function Home() {
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0, gap: 8, height: 140, paddingBlock: 20, paddingInline: 24, position: "relative", overflow: "hidden",
                 background: (() => {
                   const gradients = [
-                    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                    "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-                    "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+                    "linear-gradient(135deg, #4338ca 0%, #5b21b6 100%)",
+                    "linear-gradient(135deg, #be185d 0%, #9f1239 100%)",
+                    "linear-gradient(135deg, #1d4ed8 0%, #0e7490 100%)",
                   ];
                   const idx = (paper.title?.length || 0) % gradients.length;
                   return gradients[idx];
