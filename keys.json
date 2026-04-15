@@ -1,9 +1,0 @@
-{
-    "azure_openai_endpoint": "https://banim.cognitiveservices.azure.com/",
-    "azure_openai_api_key": "1mcZU6Evn6IVNmSL1pDCm7PuFJIVOAEjZbHb0VuuOmyNbut0l3kaJQQJ99CCACYeBjFXJ3w3AAAAACOG5fJU",
-    "azure_openai_planner_deployment": "gpt-4o",
-    "azure_openai_htmlgen_deployment": "gpt-4o",
-    "azure_tts_key": "BpeyvoW56R2UTRI7or4YkXiJMqPpkWmH8JWCuO0B2qRORKSPR8DuJQQJ99CCACYeBjFXJ3w3AAAYACOGlrqq",
-    "azure_tts_region": "eastus",
-    "reducto_api_key": "27fcb888335864fe1d294ec03cf34d0eb778835ebb6beb3413b746e61e22c32a39c4d1333a55bb77738bc3ad960a47c5"
-}
