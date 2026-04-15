@@ -2,7 +2,7 @@
 
 AI platform that converts research papers (PDFs) into narrated, animated video presentations. Drop a PDF, get a professional video walkthrough in minutes.
 
-**Live:** [banim.vercel.app](https://banim.vercel.app)
+**Live:** [papervideo.vercel.app](https://papervideo.vercel.app)
 
 ---
 
